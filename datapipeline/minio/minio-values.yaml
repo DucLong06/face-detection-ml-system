@@ -1,0 +1,50 @@
+mode: standalone
+
+rootUser: "minioadmin"
+rootPassword: "minioadmin"
+
+persistence:
+  enabled: true
+  size: 100Gi
+
+resources:
+  requests:
+    memory: 1Gi
+    cpu: 500m
+  limits:
+    memory: 2Gi
+
+service:
+  type: ClusterIP
+
+ingress:
+  enabled: true
+  annotations:
+    kubernetes.io/ingress.class: nginx
+  path: /
+  hosts:
+    - minio.example.com
+
+# buckets:
+#   - name: face-detection
+#     policy: none
+#     purge: false
+#   - name: face-detection-raw
+#     policy: none
+#     purge: false
+#   - name: face-detection-processed
+#     policy: none
+#     purge: false
+
+
+# face-images-raw
+# annotations-raw
+# metadata-stream
+# processed-data
+# pipeline-logs
+
+networkPolicy:
+  enabled: false  
+
+environment:
+  MINIO_API_CORS_ALLOW_ORIGIN: "*"

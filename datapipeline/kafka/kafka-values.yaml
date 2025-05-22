@@ -1,0 +1,106 @@
+# KRaft Single Node Configuration (Combined Controller+Broker)
+controller:
+  replicaCount: 1
+  heapOpts: "-Xmx512m -Xms512m"
+  controllerQuorumVoters: "0@kafka-controller-0.kafka-controller-headless.ingestion-ns.svc.cluster.local:9093"
+  processRoles: "controller,broker"
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 60  
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 6
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 45
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 6
+
+broker:
+  replicaCount: 0
+
+# KRaft configuration
+kraft:
+  enabled: true
+  clusterId: "kafka-cluster-dev-single"
+
+# Disable Zookeeper
+zookeeper:
+  enabled: false
+
+auth:
+  sasl:
+    enabled: false
+  tls:
+    enabled: false
+  clientProtocol: PLAINTEXT
+  interBrokerProtocol: PLAINTEXT
+  controllerProtocol: PLAINTEXT
+
+listeners:
+  client:
+    containerPort: 9092
+    protocol: PLAINTEXT
+    name: CLIENT
+  controller:
+    name: CONTROLLER
+    containerPort: 9093
+    protocol: PLAINTEXT
+  interbroker:
+    containerPort: 9094
+    protocol: PLAINTEXT
+    name: INTERNAL
+
+advertisedListeners:
+  client:
+    protocol: PLAINTEXT
+    port: 9092
+    hostname: "localhost"
+
+# Service configuration
+service:
+  type: ClusterIP
+
+metrics:
+  kafka:
+    enabled: false
+  jmx:
+    enabled: false
+
+# Persistence
+persistence:
+  enabled: true
+  size: 2Gi
+
+# Disable external access
+externalAccess:
+  enabled: false
+
+# Extra configuration for single node KRaft
+extraConfig: |
+  # Single controller configuration
+  controller.quorum.voters=0@kafka-controller-0.kafka-controller-headless.ingestion-ns.svc.cluster.local:9093
+  
+  # Single node replication settings
+  offsets.topic.replication.factor=1
+  transaction.state.log.replication.factor=1
+  transaction.state.log.min.isr=1
+  default.replication.factor=1
+  min.insync.replicas=1
+  
+  # Controller settings
+  controller.quorum.election.timeout.ms=1000
+  controller.quorum.heartbeat.interval.ms=1000
+  
+  # Log settings for development
+  log.retention.hours=24
+  log.segment.bytes=1073741824
+  log.cleanup.policy=delete

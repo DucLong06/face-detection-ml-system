@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio-external
+  namespace: storage-ns
+spec:
+  ports:
+    - port: 9000
+      targetPort: 9000
+      name: api
+      nodePort: 30900
+    - port: 9001
+      targetPort: 9001
+      name: console
+      nodePort: 30901
+  selector:
+    app.kubernetes.io/name: minio
+    app.kubernetes.io/instance: minio
+  type: LoadBalancer
