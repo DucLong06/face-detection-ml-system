@@ -1479,6 +1479,481 @@ containers:
 
 ---
 
-*Document generated: April 2026 — Updated with ADR-001 fixes*
+## 21. LLM Security & Guardrails Architecture
+
+> **Reference**: [OWASP Top 10 for LLM Applications 2025](https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/), [LLM Engineer Toolkit](https://github.com/KalyanKS-NLP/llm-engineer-toolkit)
+
+### 21.1 Threat Model (OWASP LLM Top 10 — 2025)
+
+| # | Vulnerability | Risk Level | Our Mitigation |
+|---|--------------|------------|----------------|
+| LLM01 | **Prompt Injection** | CRITICAL | LLM Guard input scanner + NeMo Guardrails dialog control |
+| LLM02 | **Sensitive Information Disclosure** | HIGH | PII scanner (LLM Guard) + output filtering + Langfuse audit |
+| LLM03 | **Supply Chain Vulnerabilities** | HIGH | Model provenance tracking (MLflow) + DVC hash verification |
+| LLM04 | **Data Poisoning** | HIGH | Great Expectations validation on RAG knowledge base + signed datasets |
+| LLM05 | **Improper Output Handling** | MEDIUM | Guardrails AI output validators + structured output (Instructor) |
+| LLM06 | **Excessive Agency** | MEDIUM | Tool sandboxing + Guardrails AI action limits |
+| LLM07 | **System Prompt Leakage** | MEDIUM | NeMo Guardrails Colang rules + LLM Guard system prompt protection |
+| LLM08 | **Vector & Embedding Weaknesses** | MEDIUM | Weaviate tenant isolation + query sanitization |
+| LLM09 | **Misinformation** | LOW | Langfuse hallucination scoring + source citation enforcement |
+| LLM10 | **Unbounded Consumption** | MEDIUM | KEDA rate limiting + Envoy circuit breaker + token budget per request |
+
+### 21.2 Multi-Layer Defense Architecture
+
+```
+User Request
+     │
+     ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ LAYER 1: Input Screening (< 30ms)                               │
+│ ┌─────────────────┐  ┌──────────────────┐  ┌────────────────┐  │
+│ │ LLM Guard       │  │ Prompt Injection  │  │ PII Anonymizer │  │
+│ │ Input Scanners  │  │ Detector          │  │ (presidio)     │  │
+│ │ (15 scanners)   │  │ (DeBERTa model)   │  │                │  │
+│ └─────────────────┘  └──────────────────┘  └────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+     │ (clean input)
+     ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ LAYER 2: Dialog Control (50-200ms)                               │
+│ ┌─────────────────────────────────────────────────────────────┐ │
+│ │ NVIDIA NeMo Guardrails                                      │ │
+│ │ - Colang 2.0 dialog rules                                  │ │
+│ │ - Topic boundary enforcement                                │ │
+│ │ - Jailbreak detection (multi-model voting)                  │ │
+│ │ - Hallucination rail (fact-checking against knowledge base) │ │
+│ └─────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+     │ (approved prompt)
+     ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ LAYER 3: LLM Inference                                           │
+│ ┌──────────────┐  ┌──────────────────┐  ┌────────────────────┐ │
+│ │ Ollama        │  │ RAGFlow          │  │ Langfuse           │ │
+│ │ TinyLlama 1.1B│  │ Retrieval +      │  │ Observability      │ │
+│ │               │  │ Generation       │  │ (cost, latency,    │ │
+│ │               │  │                  │  │  token usage)      │ │
+│ └──────────────┘  └──────────────────┘  └────────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+     │ (raw LLM output)
+     ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ LAYER 4: Output Validation (< 50ms)                              │
+│ ┌─────────────────┐  ┌──────────────────┐  ┌────────────────┐  │
+│ │ Guardrails AI   │  │ LLM Guard        │  │ Structured      │  │
+│ │ Output          │  │ Output Scanners  │  │ Output          │  │
+│ │ Validators      │  │ (20 scanners)    │  │ (Instructor)    │  │
+│ │ (Pydantic)      │  │ - Toxicity       │  │ (Pydantic       │  │
+│ │                 │  │ - Bias detect    │  │  validation)    │  │
+│ │                 │  │ - Malicious URL  │  │                 │  │
+│ │                 │  │ - Data leakage   │  │                 │  │
+│ └─────────────────┘  └──────────────────┘  └────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+     │ (validated output)
+     ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ LAYER 5: Audit & Monitoring                                      │
+│ ┌──────────────┐  ┌──────────────────┐  ┌────────────────────┐ │
+│ │ Langfuse      │  │ Prometheus       │  │ DeepTeam           │ │
+│ │ Trace logs    │  │ Guardrail        │  │ (scheduled         │ │
+│ │ + scoring     │  │ metrics          │  │  red-team scans)   │ │
+│ └──────────────┘  └──────────────────┘  └────────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 21.3 Tool Selection & Deployment
+
+| Tool | Docker Image | Purpose | Namespace | Port |
+|------|-------------|---------|-----------|------|
+| **LLM Guard** | `protectai/llm-guard-api:latest` | Input/output scanning (15+20 scanners) | `rag-ns` | 8192 |
+| **NeMo Guardrails** | `nvcr.io/nvidia/nemo-guardrails:latest` | Dialog control + Colang rules | `rag-ns` | 8090 |
+| **Guardrails AI** | `guardrails/guardrails-api:latest` | Output validation (50+ validators) | `rag-ns` | 8000 |
+| **Instructor** | *(Python library, embedded in RAGFlow)* | Structured output with Pydantic retry | `rag-ns` | — |
+| **DeepTeam** | `python:3.11-slim` + pip install | Red-teaming framework (40+ vuln classes) | `ml-pipeline-ns` | — |
+| **Garak** | `python:3.11-slim` + pip install | NVIDIA LLM vulnerability scanner | `ml-pipeline-ns` | — |
+
+### 21.4 LLM Guard Configuration
+
+```yaml
+# llm-guard-config.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: llm-guard
+  namespace: rag-ns
+spec:
+  replicas: 1
+  template:
+    spec:
+      containers:
+      - name: llm-guard
+        image: protectai/llm-guard-api:latest
+        ports:
+        - containerPort: 8192
+        env:
+        - name: SCAN_PROMPT_ENABLED
+          value: "true"
+        - name: SCAN_OUTPUT_ENABLED
+          value: "true"
+        - name: LOG_LEVEL
+          value: "INFO"
+        resources:
+          requests: { cpu: 500m, memory: 1Gi }
+          limits:   { cpu: 1, memory: 2Gi }
+        # Needs ~1.5GB for DeBERTa prompt injection model
+        livenessProbe:
+          httpGet: { path: /healthz, port: 8192 }
+          initialDelaySeconds: 60
+        readinessProbe:
+          httpGet: { path: /readyz, port: 8192 }
+          initialDelaySeconds: 45
+```
+
+**Input Scanners Enabled:**
+
+| Scanner | Purpose | Performance |
+|---------|---------|-------------|
+| `PromptInjection` | Detect direct & indirect injection attacks | ~15ms (DeBERTa v3) |
+| `Toxicity` | Block toxic/harmful prompts | ~10ms |
+| `BanTopics` | Restrict off-topic requests | ~5ms |
+| `InvisibleText` | Detect hidden unicode/zero-width attacks | ~1ms |
+| `Secrets` | Detect API keys, passwords in prompts | ~2ms |
+| `Anonymize` (PII) | Auto-redact names, emails, phone numbers | ~8ms |
+| `Language` | Enforce language whitelist (en, vi) | ~3ms |
+| `Regex` | Custom pattern matching | ~1ms |
+
+**Output Scanners Enabled:**
+
+| Scanner | Purpose | Performance |
+|---------|---------|-------------|
+| `Deanonymize` | Re-inject PII from vault after processing | ~2ms |
+| `Toxicity` | Scan LLM output for harmful content | ~10ms |
+| `MaliciousURLs` | Block malicious URLs in responses | ~5ms |
+| `NoRefusal` | Detect unhelpful refusals | ~3ms |
+| `Bias` | Detect biased/discriminatory outputs | ~10ms |
+| `FactualConsistency` | Cross-check against retrieved documents | ~20ms |
+| `Relevance` | Ensure output is relevant to query | ~8ms |
+| `Sensitive` | Block sensitive data leakage | ~5ms |
+
+### 21.5 NeMo Guardrails — Colang 2.0 Rules
+
+```python
+# config/rails.co (Colang 2.0 syntax)
+
+# === Topic Boundaries ===
+define user ask about face detection
+  "How do I detect faces?"
+  "What model is used?"
+  "Show me detection results"
+
+define user ask off topic
+  "Write me a poem"
+  "What's the weather?"
+  "Tell me a joke"
+
+define flow handle off topic
+  user ask off topic
+  bot refuse off topic
+  "I'm a face detection assistant. I can help with face detection, model performance, and system monitoring. Let me know how I can help with those topics."
+
+# === Prompt Injection Defense ===
+define flow detect injection
+  user ...
+  $is_injection = execute check_prompt_injection(user_message=$last_user_message)
+  if $is_injection
+    bot warn injection
+    "I've detected a potential prompt manipulation attempt. Your request has been logged for security review."
+    stop
+
+# === Hallucination Prevention ===
+define flow check facts
+  bot ...
+  $is_hallucination = execute check_hallucination(bot_message=$last_bot_message)
+  if $is_hallucination
+    bot refuse hallucination
+    "I'm not confident in that answer. Let me check the knowledge base again."
+    execute generate_with_stricter_retrieval()
+
+# === PII Protection ===
+define flow block pii output
+  bot ...
+  $has_pii = execute scan_pii(bot_message=$last_bot_message)
+  if $has_pii
+    $sanitized = execute remove_pii(bot_message=$last_bot_message)
+    bot say $sanitized
+```
+
+### 21.6 Red-Teaming Pipeline (DeepTeam + Garak)
+
+```python
+# red_team_pipeline.py — Scheduled via Airflow DAG (monthly)
+from deepteam import red_team
+from deepteam.vulnerabilities import (
+    PromptInjection, PIILeakage, Hallucination,
+    Toxicity, Bias, IntellectualProperty
+)
+from deepteam.attacks import (
+    PromptInjection as PIAttack, Jailbreaking,
+    ROT13Encoding, CrescendoJailbreaking
+)
+
+# Define target LLM endpoint
+target_model = "http://ollama.rag-ns:11434/api/generate"
+
+# Run red-team assessment
+results = red_team(
+    model=target_model,
+    vulnerabilities=[
+        PromptInjection(),   # OWASP LLM01
+        PIILeakage(),        # OWASP LLM02
+        Hallucination(),     # OWASP LLM09
+        Toxicity(),
+        Bias(),
+        IntellectualProperty(),
+    ],
+    attacks=[
+        PIAttack(),
+        Jailbreaking(),
+        ROT13Encoding(),
+        CrescendoJailbreaking(),
+    ],
+    # OWASP + NIST compliance check
+    frameworks=["owasp:llm:01", "owasp:llm:02", "nist:ai:100-2"],
+)
+
+# Export results to Langfuse for tracking
+results.export_to_langfuse(
+    host="http://langfuse.rag-ns:3000",
+    public_key="...",
+    secret_key="..."
+)
+
+# Fail pipeline if critical vulnerabilities found
+assert results.critical_count == 0, f"CRITICAL: {results.critical_count} vulnerabilities found!"
+```
+
+**Airflow DAG Schedule:**
+```python
+# dags/red_team_scan.py
+from airflow import DAG
+from airflow.providers.cncf.kubernetes.operators.kubernetes_pod import KubernetesPodOperator
+
+dag = DAG('llm_red_team_scan', schedule_interval='0 3 1 * *')  # Monthly, 3 AM
+
+red_team_task = KubernetesPodOperator(
+    task_id='run_deepteam_scan',
+    namespace='ml-pipeline-ns',
+    image='python:3.11-slim',
+    cmds=['bash', '-c'],
+    arguments=['pip install deepteam garak && python /scripts/red_team_pipeline.py'],
+    resources={'requests': {'cpu': '1', 'memory': '4Gi'}},
+    dag=dag,
+)
+```
+
+---
+
+## 22. Advanced LLM Engineering Stack
+
+> **Reference**: [LLM Engineer Toolkit (150+ tools)](https://github.com/KalyanKS-NLP/llm-engineer-toolkit), [alexbobes.com](https://alexbobes.com/artificial-intelligence/the-ultimate-llm-engineer-toolkit/)
+
+### 22.1 Enhanced RAG Pipeline Architecture
+
+The current plan uses RAGFlow + Weaviate + Typesense. Based on the LLM Engineer Toolkit research, we add these enhancements:
+
+| Enhancement | Tool | Purpose | Integration Point |
+|-------------|------|---------|------------------|
+| **Structured Output** | [Instructor](https://github.com/jxnl/instructor) | Pydantic-validated LLM responses with auto-retry | Ollama output → Pydantic model |
+| **Prompt Compression** | [LLMLingua](https://github.com/microsoft/LLMLingua) | 2-5x context compression, fit more docs in context | Pre-Ollama prompt |
+| **LLM Caching** | [GPTCache](https://github.com/zilliztech/GPTCache) | Semantic cache for repeated queries, reduce latency | Before Ollama inference |
+| **LLM Gateway** | [LiteLLM Proxy](https://github.com/BerriAI/litellm) | Unified API for multiple models, rate limiting, logging | API gateway for Ollama |
+| **Embedding Models** | [Sentence-Transformers](https://github.com/UKPLab/sentence-transformers) | Local embedding generation (all-MiniLM-L6-v2) | Weaviate vectorizer |
+| **Chunking** | [Chonkie](https://github.com/bhavnicksm/chonkie) | Smart semantic chunking for RAG documents | Pre-Weaviate ingestion |
+| **Reranker** | [FlashRank](https://github.com/PrithivirajDamodaran/FlashRank) | Ultra-fast reranking (~10ms, no GPU needed) | Post-retrieval, pre-generation |
+
+### 22.2 Enhanced RAG Flow (with Security Layers)
+
+```
+User Query
+    │
+    ▼
+[LLM Guard Input Scan] ──(block)──> 403 Rejected
+    │ (clean)
+    ▼
+[GPTCache Check] ──(cache hit)──> Return cached response
+    │ (cache miss)
+    ▼
+[NeMo Guardrails Dialog Control]
+    │ (approved)
+    ▼
+[LLMLingua Prompt Compression]
+    │
+    ▼
+[RAGFlow Retrieval]
+    ├── Weaviate (vector search)
+    └── Typesense (keyword BM25)
+    │
+    ▼
+[FlashRank Reranker] ──> Top-K relevant docs
+    │
+    ▼
+[Ollama TinyLlama 1.1B] ──> via LiteLLM Proxy
+    │
+    ▼
+[Instructor Structured Output] ──> Pydantic validated
+    │
+    ▼
+[LLM Guard Output Scan] ──(block)──> Sanitized response
+    │ (clean)
+    ▼
+[Guardrails AI Final Validation]
+    │
+    ▼
+[Langfuse Trace Logging] ──> Response to User
+```
+
+### 22.3 LLM Evaluation Framework
+
+| Tool | Purpose | When to Run |
+|------|---------|-------------|
+| [DeepEval](https://github.com/confident-ai/deepeval) | RAG evaluation metrics (faithfulness, relevance, coherence) | After RAG pipeline changes |
+| [Ragas](https://github.com/explodinggradients/ragas) | RAG-specific metrics (context precision, answer relevancy) | Weekly automated eval |
+| [DeepTeam](https://github.com/confident-ai/deepteam) | Security red-teaming (40+ vulnerability classes) | Monthly security scan |
+| [Garak](https://github.com/NVIDIA/garak) | NVIDIA LLM vulnerability probing | Monthly security scan |
+| [Promptfoo](https://github.com/promptfoo/promptfoo) | Prompt testing & regression checking | On every prompt template change |
+
+**Evaluation Pipeline (Airflow DAG):**
+```python
+# dags/llm_evaluation.py
+# Runs weekly to assess RAG quality
+
+evaluate_rag = KubernetesPodOperator(
+    task_id='evaluate_rag_quality',
+    namespace='ml-pipeline-ns',
+    image='python:3.11-slim',
+    cmds=['bash', '-c'],
+    arguments=['''
+        pip install deepeval ragas langfuse &&
+        python -c "
+from deepeval.metrics import (
+    FaithfulnessMetric,
+    AnswerRelevancyMetric,
+    ContextualPrecisionMetric,
+    HallucinationMetric
+)
+from deepeval.test_case import LLMTestCase
+from deepeval import evaluate
+
+# Load test cases from gold dataset
+test_cases = load_test_cases('s3://face-detection/eval/rag_test_cases.json')
+
+metrics = [
+    FaithfulnessMetric(threshold=0.7),
+    AnswerRelevancyMetric(threshold=0.8),
+    ContextualPrecisionMetric(threshold=0.7),
+    HallucinationMetric(threshold=0.5),
+]
+
+results = evaluate(test_cases, metrics)
+# Push metrics to Prometheus
+push_metrics_to_prometheus(results)
+# Log to Langfuse
+log_to_langfuse(results)
+"
+    '''],
+)
+```
+
+### 22.4 LLM Observability Stack
+
+| Layer | Tool | Metrics |
+|-------|------|---------|
+| **Tracing** | Langfuse | Per-request traces (prompt → retrieval → generation → validation) |
+| **Cost Tracking** | Langfuse + LiteLLM | Token usage, cost per query, model comparison |
+| **Quality Scoring** | Langfuse Scores | User feedback, auto-eval scores, hallucination rate |
+| **Latency** | Prometheus + Grafana | P50/P95/P99 latency per component (cache, retrieval, generation, validation) |
+| **Security Alerts** | LLM Guard + Prometheus | Blocked requests, injection attempts, PII detections |
+| **Drift Detection** | DeepEval + Airflow | Weekly RAG quality regression detection |
+
+**Grafana Dashboard Panels (LLM Monitoring):**
+
+| Panel | Metric | Alert Threshold |
+|-------|--------|----------------|
+| Prompt Injection Rate | `llm_guard_blocked_total{scanner="PromptInjection"}` | > 10/hour |
+| PII Detection Rate | `llm_guard_blocked_total{scanner="Anonymize"}` | > 5/hour |
+| Response Toxicity | `llm_guard_output_blocked{scanner="Toxicity"}` | > 1/hour |
+| Cache Hit Rate | `gptcache_hit_total / gptcache_total` | < 20% (investigate) |
+| RAG Faithfulness | `deepeval_faithfulness_score` | < 0.7 (trigger review) |
+| E2E Latency P95 | `histogram_quantile(0.95, llm_request_duration_seconds)` | > 5s |
+| Token Usage | `litellm_total_tokens` | > budget/day |
+
+### 22.5 Kubernetes Resource Additions (for LLM Security stack)
+
+| Component | CPU Request | Memory Request | CPU Limit | Memory Limit | PVC |
+|-----------|------------|----------------|-----------|-------------|-----|
+| LLM Guard | 500m | 1Gi | 1 | 2Gi | — |
+| NeMo Guardrails | 500m | 512Mi | 1 | 1Gi | — |
+| Guardrails AI | 250m | 256Mi | 500m | 512Mi | — |
+| GPTCache (Redis) | 250m | 512Mi | 500m | 1Gi | 5Gi |
+| LiteLLM Proxy | 250m | 256Mi | 500m | 512Mi | — |
+| **Subtotal** | **1.75 cores** | **2.5Gi** | **3.5 cores** | **5Gi** | **5Gi** |
+
+> **Updated infrastructure total**: ~38 cores, ~110GB RAM (previously ~36 cores, ~107GB)
+
+---
+
+## 23. LLM Knowledge Base Management
+
+### 23.1 RAG Knowledge Sources for Face Detection System
+
+| Knowledge Source | Type | Update Frequency | Chunking Strategy |
+|-----------------|------|------------------|-------------------|
+| Face detection API docs | Markdown | On code change | Semantic (512 tokens) |
+| YOLOv11 documentation | PDF | Monthly | Fixed (1000 tokens) with overlap |
+| Model performance reports | JSON/CSV | Weekly (auto) | Structured extraction |
+| Incident postmortems | Markdown | On creation | Semantic (768 tokens) |
+| Monitoring runbooks | Markdown | On update | Semantic (512 tokens) |
+| System architecture docs | Markdown + PNG | On update | Multimodal (text + image captions) |
+
+### 23.2 Knowledge Base Pipeline
+
+```
+Source documents
+    │
+    ▼
+[Chonkie Semantic Chunker]
+    │
+    ▼
+[Sentence-Transformers Embedding] (all-MiniLM-L6-v2, 384 dim)
+    │
+    ▼
+[Weaviate Vector Store]
+    │
+    ├── Collection: "FaceDetectionDocs" (general docs)
+    ├── Collection: "IncidentReports" (postmortems)
+    ├── Collection: "ModelPerformance" (metrics & reports)
+    └── Collection: "Runbooks" (operational guides)
+
+[Great Expectations] validates:
+    - No duplicate documents
+    - Embedding dimension consistency (384)
+    - Chunk size within bounds (100-1500 tokens)
+    - Source attribution present
+```
+
+### 23.3 Knowledge Base Security
+
+| Concern | Mitigation |
+|---------|-----------|
+| **Data Poisoning** (OWASP LLM04) | GE validation on all ingested docs + manual approval gate |
+| **Tenant Isolation** | Weaviate multi-tenancy with per-role collection access |
+| **Document Provenance** | SHA-256 hash + git commit tracking for every document |
+| **Stale Knowledge** | Airflow DAG checks document freshness weekly |
+| **Embedding Inversion** | Weaviate API behind Istio mTLS, no direct external access |
+
+---
+
+*Document generated: April 2026 — Updated with ADR-001 fixes + LLM Security & Advanced LLM Engineering*
 *Project: Face Detection ML System - MLOps Extended Architecture*
 *Author: Long Loe (Hoang Duc Long)*
+*References: [OWASP LLM Top 10](https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/), [LLM Engineer Toolkit](https://github.com/KalyanKS-NLP/llm-engineer-toolkit)*

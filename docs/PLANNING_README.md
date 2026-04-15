@@ -205,6 +205,37 @@ Evidently AI monitors → Prometheus alerts → Airflow triggers retraining pipe
 
 ---
 
+### 10. LLM Security Architecture (NEW)
+
+5-layer defense mapped to OWASP Top 10 for LLM Applications 2025.
+
+![LLM Security Architecture](../images/10_llm_security_architecture.png)
+
+**Key Design Decisions:**
+- **Layer 1** — LLM Guard (15 input scanners): prompt injection, PII, toxicity, secrets detection in <30ms
+- **Layer 2** — NeMo Guardrails (Colang 2.0): dialog control, topic boundaries, jailbreak detection
+- **Layer 3** — LLM Inference with GPTCache, LLMLingua compression, FlashRank reranking
+- **Layer 4** — Output validation: Guardrails AI + Instructor + LLM Guard (20 output scanners)
+- **Layer 5** — Audit: Langfuse tracing + Prometheus metrics + DeepTeam/Garak monthly red-teaming
+- Total security overhead: ~130-280ms (acceptable for conversational UX)
+
+---
+
+### 11. Enhanced RAG Pipeline (NEW)
+
+Full RAG flow with security layers, semantic caching, and quality validation.
+
+![Enhanced RAG Pipeline](../images/11_enhanced_rag_pipeline.png)
+
+**Key Design Decisions:**
+- GPTCache for 60-80% cache hit rate (~5ms vs ~2s for cache hits)
+- LLMLingua for 2-5x prompt compression (fit more docs in context)
+- FlashRank for ultra-fast reranking (~10ms, no GPU)
+- Instructor for Pydantic-validated structured output with auto-retry
+- Full trace pipeline through Langfuse for cost, latency, and quality scoring
+
+---
+
 ## Technology Stack Summary
 
 ### Data Engineering (MLOps Level 2)
@@ -244,6 +275,25 @@ Evidently AI monitors → Prometheus alerts → Airflow triggers retraining pipe
 | LLM Runtime | Ollama (TinyLlama 1.1B) | Local LLM inference on CPU |
 | LLM Observability | Langfuse | Cost, latency, quality tracking |
 | Safety | Guardrails AI | Input/output validation |
+| Prompt Compression | LLMLingua | 2-5x context compression |
+| Semantic Cache | GPTCache | Reduce latency & cost |
+| Reranker | FlashRank | Ultra-fast reranking (~10ms) |
+| Structured Output | Instructor | Pydantic-validated LLM output |
+| LLM Gateway | LiteLLM Proxy | Rate limiting, fallback, usage logs |
+| Smart Chunking | Chonkie | Semantic document chunking |
+
+### LLM Security (NEW)
+
+| Category | Tool | Purpose |
+|----------|------|---------|
+| Input Scanning | LLM Guard (15 scanners) | Prompt injection, PII, toxicity, secrets |
+| Dialog Control | NeMo Guardrails (Colang 2.0) | Topic boundaries, jailbreak detection |
+| Output Scanning | LLM Guard (20 scanners) | Bias, malicious URLs, data leakage |
+| Output Validation | Guardrails AI + Instructor | Pydantic schema enforcement |
+| Red-Teaming | DeepTeam | 40+ vulnerability classes, 10+ attacks |
+| Vuln Scanning | Garak (NVIDIA) | LLM vulnerability probing |
+| RAG Evaluation | DeepEval + Ragas | Faithfulness, relevancy, hallucination |
+| Prompt Testing | Promptfoo | Prompt regression testing |
 
 ### Security & Auth
 
@@ -338,6 +388,8 @@ Evidently AI monitors → Prometheus alerts → Airflow triggers retraining pipe
 | D7 | [07_rag_pipeline.png](../images/07_rag_pipeline.png) | RAGFlow → Weaviate + Typesense → Ollama |
 | D8 | [08_sso_security_flow.png](../images/08_sso_security_flow.png) | 12-step Keycloak SSO flow |
 | D9 | [09_drift_detection.png](../images/09_drift_detection.png) | Evidently AI → Prometheus → Airflow retrain |
+| D10 | [10_llm_security_architecture.png](../images/10_llm_security_architecture.png) | **NEW** — 5-layer OWASP defense (LLM Guard, NeMo, Guardrails AI, DeepTeam) |
+| D11 | [11_enhanced_rag_pipeline.png](../images/11_enhanced_rag_pipeline.png) | **NEW** — Full RAG flow with security + caching + reranking |
 
 ---
 
