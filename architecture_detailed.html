@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Face Detection MLOps - Full Architecture</title>
+<style>
+:root {
+  --done: #10b981; --done-bg: #d1fae5; --done-border: #6ee7b7;
+  --wip: #f59e0b; --wip-bg: #fef3c7; --wip-border: #fcd34d;
+  --plan: #8b5cf6; --plan-bg: #ede9fe; --plan-border: #c4b5fd;
+  --rag: #ec4899; --rag-bg: #fce7f3; --rag-border: #f9a8d4;
+  --infra: #3b82f6; --infra-bg: #dbeafe; --infra-border: #93c5fd;
+  --bg: #f8fafc; --text: #1e293b; --muted: #64748b;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); }
+
+/* NAV */
+.tabs { display:flex; background:#1e293b; padding:0 16px; gap:2px; position:sticky; top:0; z-index:100; }
+.tab { padding:12px 20px; color:#94a3b8; cursor:pointer; border:none; background:none; font-size:13px; font-weight:600; border-bottom:3px solid transparent; transition:all .2s; white-space:nowrap; }
+.tab:hover { color:#e2e8f0; background:rgba(255,255,255,0.05); }
+.tab.active { color:#fff; border-bottom-color:#3b82f6; }
+.view { display:none; padding:24px; max-width:1600px; margin:0 auto; }
+.view.active { display:block; }
+
+h2 { font-size:22px; margin-bottom:16px; color:#1e293b; }
+h3 { font-size:16px; margin:16px 0 8px; color:#334155; }
+
+/* LEGEND */
+.legend { display:flex; gap:16px; flex-wrap:wrap; margin-bottom:20px; padding:12px 16px; background:#fff; border-radius:10px; border:1px solid #e2e8f0; }
+.legend-item { display:flex; align-items:center; gap:6px; font-size:12px; color:#475569; }
+.legend-dot { width:14px; height:14px; border-radius:4px; border:2px solid; }
+
+/* GRID SYSTEM */
+.arch-grid { display:grid; gap:16px; }
+.arch-row { display:flex; gap:12px; align-items:stretch; }
+.arch-col { flex:1; min-width:0; }
+
+/* NAMESPACE BOX */
+.ns-box { border-radius:12px; border:2px solid; padding:14px; margin-bottom:12px; position:relative; }
+.ns-box.done { border-color:var(--done-border); background:var(--done-bg); }
+.ns-box.wip { border-color:var(--wip-border); background:var(--wip-bg); }
+.ns-box.plan { border-color:var(--plan-border); background:var(--plan-bg); }
+.ns-box.rag { border-color:var(--rag-border); background:var(--rag-bg); }
+.ns-box.infra { border-color:var(--infra-border); background:var(--infra-bg); }
+
+.ns-label { position:absolute; top:-10px; left:12px; background:inherit; padding:0 8px; font-size:11px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; border-radius:4px; }
+.ns-box.done .ns-label { color:var(--done); background:var(--done-bg); }
+.ns-box.wip .ns-label { color:var(--wip); background:var(--wip-bg); }
+.ns-box.plan .ns-label { color:var(--plan); background:var(--plan-bg); }
+.ns-box.rag .ns-label { color:var(--rag); background:var(--rag-bg); }
+.ns-box.infra .ns-label { color:var(--infra); background:var(--infra-bg); }
+
+/* POD / SERVICE */
+.pod { background:#fff; border-radius:8px; padding:10px 12px; margin:6px 0; border:1px solid #e2e8f0; position:relative; }
+.pod-name { font-weight:700; font-size:13px; color:#1e293b; }
+.pod-image { font-size:11px; color:#64748b; font-family:'Cascadia Code',monospace; margin-top:2px; }
+.pod-desc { font-size:11px; color:#475569; margin-top:3px; }
+.pod-port { font-size:10px; color:#94a3b8; margin-top:2px; }
+.pod-role { position:absolute; top:6px; right:8px; font-size:9px; font-weight:700; padding:2px 6px; border-radius:10px; }
+.pod-role.ds { background:#dbeafe; color:#1d4ed8; }
+.pod-role.dev { background:#dcfce7; color:#15803d; }
+.pod-role.da { background:#fef9c3; color:#a16207; }
+.pod-role.all { background:#f1f5f9; color:#475569; }
+
+/* PODS GRID */
+.pods-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:8px; }
+
+/* FLOW */
+.flow-section { background:#fff; border-radius:12px; border:1px solid #e2e8f0; padding:16px; margin-bottom:16px; }
+.flow-title { font-size:15px; font-weight:700; margin-bottom:12px; padding-bottom:8px; border-bottom:2px solid; }
+.flow-title.batch { color:var(--wip); border-color:var(--wip); }
+.flow-title.stream { color:var(--infra); border-color:var(--infra); }
+.flow-title.cdc { color:var(--plan); border-color:var(--plan); }
+.flow-title.rag-flow { color:var(--rag); border-color:var(--rag); }
+.flow-title.auth { color:#6366f1; border-color:#6366f1; }
+
+.flow-steps { display:flex; align-items:center; gap:0; flex-wrap:wrap; padding:8px 0; }
+.flow-step { background:#f8fafc; border:2px solid #e2e8f0; border-radius:10px; padding:10px 14px; min-width:140px; max-width:200px; text-align:center; position:relative; flex-shrink:0; }
+.flow-step.done { border-color:var(--done); background:var(--done-bg); }
+.flow-step.wip { border-color:var(--wip); background:var(--wip-bg); }
+.flow-step.plan { border-color:var(--plan); background:var(--plan-bg); }
+.flow-step.rag-s { border-color:var(--rag); background:var(--rag-bg); }
+.flow-step .step-name { font-weight:700; font-size:12px; }
+.flow-step .step-ns { font-size:10px; color:#64748b; margin-top:2px; }
+.flow-step .step-data { font-size:10px; color:#94a3b8; margin-top:3px; font-style:italic; }
+
+.flow-arrow { font-size:20px; color:#94a3b8; padding:0 4px; flex-shrink:0; line-height:1; }
+.flow-arrow.highlight { color:var(--wip); }
+
+.data-label { display:inline-block; font-size:9px; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:4px; padding:1px 5px; margin:1px; color:#475569; }
+.data-label.img { background:#fef3c7; border-color:#fcd34d; color:#92400e; }
+.data-label.log { background:#dcfce7; border-color:#86efac; color:#166534; }
+.data-label.text { background:#dbeafe; border-color:#93c5fd; color:#1e40af; }
+.data-label.metric { background:#ede9fe; border-color:#c4b5fd; color:#5b21b6; }
+.data-label.vec { background:#fce7f3; border-color:#f9a8d4; color:#9d174d; }
+
+/* AUTH DIAGRAM */
+.auth-flow-container { display:flex; flex-direction:column; gap:16px; }
+.auth-box { background:#fff; border:2px solid #c7d2fe; border-radius:12px; padding:16px; }
+.auth-box h4 { color:#4338ca; margin-bottom:8px; font-size:14px; }
+.auth-step { display:flex; align-items:center; gap:8px; padding:6px 0; font-size:13px; }
+.auth-num { width:24px; height:24px; background:#4338ca; color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex-shrink:0; }
+
+/* ROLE TABLE */
+.role-table { width:100%; border-collapse:collapse; margin:12px 0; font-size:13px; }
+.role-table th { background:#f1f5f9; padding:10px 12px; text-align:left; font-weight:700; border-bottom:2px solid #e2e8f0; }
+.role-table td { padding:8px 12px; border-bottom:1px solid #f1f5f9; vertical-align:top; }
+.role-table tr:hover { background:#f8fafc; }
+.role-badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600; margin:1px; }
+.role-badge.ds { background:#dbeafe; color:#1d4ed8; }
+.role-badge.dev { background:#dcfce7; color:#15803d; }
+.role-badge.da { background:#fef9c3; color:#a16207; }
+.role-badge.admin { background:#fee2e2; color:#991b1b; }
+
+/* deployKF */
+.deploykf-section { background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius:16px; padding:24px; color:#fff; margin-bottom:20px; }
+.deploykf-section h3 { color:#fff; margin-top:0; }
+.deploykf-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:12px; margin-top:12px; }
+.deploykf-card { background:rgba(255,255,255,0.15); border-radius:10px; padding:12px; backdrop-filter:blur(4px); }
+.deploykf-card h4 { font-size:13px; margin-bottom:4px; }
+.deploykf-card p { font-size:11px; opacity:0.85; }
+.deploykf-vs { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px; }
+.deploykf-col { background:rgba(255,255,255,0.1); border-radius:10px; padding:16px; }
+.deploykf-col h4 { margin-bottom:8px; font-size:14px; }
+.deploykf-col ul { font-size:12px; list-style:none; padding:0; }
+.deploykf-col li { padding:4px 0; padding-left:16px; position:relative; }
+.deploykf-col li::before { content:''; position:absolute; left:0; top:10px; width:8px; height:8px; border-radius:50%; }
+.col-current li::before { background:#fbbf24; }
+.col-deploykf li::before { background:#34d399; }
+
+/* COMPARE TABLE */
+.compare-table { width:100%; border-collapse:collapse; margin:12px 0; font-size:12px; background:#fff; border-radius:10px; overflow:hidden; }
+.compare-table th { background:#1e293b; color:#fff; padding:10px 12px; text-align:left; }
+.compare-table td { padding:8px 12px; border-bottom:1px solid #f1f5f9; }
+.compare-table tr:nth-child(even) { background:#f8fafc; }
+.tag-yes { color:#10b981; font-weight:700; }
+.tag-no { color:#ef4444; }
+.tag-partial { color:#f59e0b; }
+
+/* TIPS */
+.tip { background:#eff6ff; border-left:4px solid #3b82f6; padding:12px 16px; border-radius:0 8px 8px 0; margin:12px 0; font-size:13px; }
+.tip strong { color:#1d4ed8; }
+
+.warn { background:#fef3c7; border-left:4px solid #f59e0b; padding:12px 16px; border-radius:0 8px 8px 0; margin:12px 0; font-size:13px; }
+.warn strong { color:#92400e; }
+
+/* RESPONSIVE */
+@media (max-width:900px) {
+  .arch-row { flex-direction:column; }
+  .flow-steps { flex-wrap:wrap; }
+  .deploykf-vs { grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="tabs">
+  <button class="tab active" onclick="showView('v-ns')">Namespaces & Pods</button>
+  <button class="tab" onclick="showView('v-flow')">Data Flow</button>
+  <button class="tab" onclick="showView('v-roles')">Roles & Access</button>
+  <button class="tab" onclick="showView('v-auth')">SSO & Security</button>
+  <button class="tab" onclick="showView('v-deploykf')">deployKF</button>
+  <button class="tab" onclick="showView('v-roadmap')">Roadmap</button>
+</div>
+
+<!-- ==================== VIEW 1: NAMESPACES & PODS ==================== -->
+<div id="v-ns" class="view active">
+<h2>Kubernetes Namespaces & Pods</h2>
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:var(--done-bg);border-color:var(--done)"></div> Done (MLOps 1)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--wip-bg);border-color:var(--wip)"></div> WIP (MLOps 2)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--plan-bg);border-color:var(--plan)"></div> Planned (MLOps 3)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--rag-bg);border-color:var(--rag)"></div> RAG/LLM</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--infra-bg);border-color:var(--infra)"></div> Infra/Platform</div>
+  <div class="legend-item"><span class="pod-role ds" style="position:static">DS</span> Data Scientist</div>
+  <div class="legend-item"><span class="pod-role dev" style="position:static">DEV</span> Developer</div>
+  <div class="legend-item"><span class="pod-role da" style="position:static">DA</span> Data Analyst/Eng</div>
+</div>
+
+<!-- SERVING NS -->
+<div class="ns-box done">
+  <span class="ns-label">serving-ns (MLOps 1 - Done)</span>
+  <div class="pods-grid">
+    <div class="pod"><span class="pod-role dev">DEV</span>
+      <div class="pod-name">fastapi-server</div>
+      <div class="pod-image">image: face-detection-api:latest</div>
+      <div class="pod-desc">REST API endpoint nhan anh, tra ve bbox</div>
+      <div class="pod-port">Port: 8000 | Replicas: 2-5 (HPA)</div>
+    </div>
+    <div class="pod"><span class="pod-role ds">DS</span>
+      <div class="pod-name">kserve-face-v1</div>
+      <div class="pod-image">image: kserve/yolov11n-face:v1</div>
+      <div class="pod-desc">InferenceService stable - YOLOv11 face detection</div>
+      <div class="pod-port">Port: 8080 | gRPC: 8081 | GPU: 1</div>
+    </div>
+    <div class="pod"><span class="pod-role ds">DS</span>
+      <div class="pod-name">kserve-face-v2 (canary)</div>
+      <div class="pod-image">image: kserve/yolov11n-face:v2</div>
+      <div class="pod-desc">Canary model - testing version moi (10% traffic)</div>
+      <div class="pod-port">Port: 8080 | Istio: 90/10 split</div>
+    </div>
+    <div class="pod"><span class="pod-role ds">DS</span>
+      <div class="pod-name">rayserve-backend</div>
+      <div class="pod-image">image: rayproject/ray:2.9-gpu</div>
+      <div class="pod-desc">Dynamic batching, parallel inference, GPU sharing</div>
+      <div class="pod-port">Port: 8000 | Dashboard: 8265 | Replicas: 1-10</div>
+    </div>
+  </div>
+</div>
+
+<!-- STREAMING NS -->
+<div class="ns-box wip">
+  <span class="ns-label">streaming-ns (MLOps 2 - WIP)</span>
+  <div class="pods-grid">
+    <div class="pod"><span class="pod-role da">DA</span>
+      <div class="pod-name">kafka-broker-{0,1,2}</div>
+      <div class="pod-image">image: bitnami/kafka:3.6 (KRaft mode)</div>
+      <div class="pod-desc">3 brokers, KRaft (no Zookeeper), topics: face.*</div>
+      <div class="pod-port">Port: 9092 | Internal: 9093 | 3 replicas</div>
+    </div>
+    <div class="pod"><span class="pod-role da">DA</span>
+      <div class="pod-name">schema-registry</div>
+      <div class="pod-image">image: confluentinc/cp-schema-registry:7.5</div>
+      <div class="pod-desc">Avro/JSON schema cho Kafka topics</div>
+      <div class="pod-port">Port: 8081</div>
+    </div>
+  </div>
+</div>
+
+<!-- STORAGE NS -->
+<div class="ns-box wip">
+  <span class="ns-label">storage-ns (MLOps 2 - WIP)</span>
+  <div class="pods-grid">
+    <div class="pod"><span class="pod-role da">DA</span>
+      <div class="pod-name">minio-{0,1,2,3}</div>
+      <div class="pod-image">image: minio/minio:latest</div>
+      <div class="pod-desc">S3-compatible. Buckets: raw/, bronze/, silver/, gold/, models/</div>
+      <div class="pod-port">API: 9000 | Console: 9001 | 4 nodes</div>
+    </div>
+    <div class="pod"><span class="pod-role ds">DS</span>
+      <div class="pod-name">dvc-server</div>
+      <div class="pod-image">image: iterativeai/dvc:3.x</div>
+      <div class="pod-desc">Data versioning, link toi MinIO remote storage</div>
+      <div class="pod-port">Git-based | Remote: s3://minio/dvc</div>
+    </div>
+  </div>
+</div>
+
+<!-- INGESTION NS -->
+<div class="ns-box plan">
+  <span class="ns-label">ingestion-ns (MLOps 2/3)</span>
+  <div class="pods-grid">
+    <div class="pod"><span class="pod-role da">DA</span>
+      <div class="pod-name">debezium-connect</div>
+      <div class="pod-image">image: debezium/connect:2.4</div>
+      <div class="pod-desc">CDC tu PostgreSQL -> Kafka topics (app.public.*)</div>
+      <div class="pod-port">Port: 8083 | REST config API</div>
+    </div>
+    <div class="pod"><span class="pod-role da">DA</span>
+      <div class="pod-name">kafka-connect</div>
+      <div class="pod-image">image: confluentinc/cp-kafka-connect:7.5</div>
+      <div class="pod-desc">MinIO Sink Connector, JDBC Source Connector</div>
+      <div class="pod-port">Port: 8083</div>
+    </div>
+  </div>
+</div>
+
+<!-- PROCESSING NS -->
+<div class="ns-box plan">
+  <span class="ns-label">processing-ns (MLOps 2/3)</span>
+  <div class="pods-grid">
+    <div class="pod"><span class="pod-role da">DA</span>
+      <div class="pod-name">spark-master + spark-worker-{0..N}</div>
+      <div class="pod-image">image: bitnami/spark:3.5</div>
+      <div class="pod-desc">Batch ETL (Bronze/Silver/Gold) + Streaming feature eng</div>
+      <div class="pod-port">Master: 7077 | UI: 8080 | Workers: auto-scale</div>
+    </div>
+    <div class="pod"><span class="pod-role da">DA</span>
+      <div class="pod-name">flink-jobmanager + taskmanager-{0..N}</div>
+      <div class="pod-image">image: flink:1.18-java11</div>
+      <div class="pod-desc">Stream validation: Kafka -> validate schema -> route valid/invalid</div>
+      <div class="pod-port">UI: 8081 | RPC: 6123</div>
+    </div>
+  </div>
+</div>
+
+<!-- VALIDATION NS -->
+<div class="ns-box plan">
+  <span class="ns-label">validation-ns (MLOps 2/3)</span>
+  <div class="pods-grid">
+    <div class="pod"><span class="pod-role da">DA</span>
+      <div class="pod-name">great-expectations</div>
+      <div class="pod-image">image: greatexpectations/gx:0.18</div>
+      <div class="pod-desc">Data quality: schema check, null rates, value ranges, uniqueness</div>
+      <div class="pod-port">Checkpoint per Bronze/Silver/Gold layer</div>
+    </div>
+  </div>
+</div>
+
+<!-- METADATA NS -->
+<div class="ns-box plan">
+  <span class="ns-label">metadata-ns (MLOps 2/3)</span>
+  <div class="pods-grid">
+    <div class="pod"><span class="pod-role all">ALL</span>
+      <div class="pod-name">datahub-frontend + datahub-gms</div>
+      <div class="pod-image">image: linkedin/datahub-frontend, datahub-gms</div>
+      <div class="pod-desc">Metadata catalog + data lineage. Auto-ingest tu Kafka, Airflow, GE, Spark</div>
+      <div class="pod-port">Frontend: 9002 | GMS API: 8080</div>
+    </div>
+    <div class="pod"><span class="pod-role da">DA</span>
+      <div class="pod-name">datahub-mysql + elasticsearch + neo4j</div>
+      <div class="pod-image">Backend stores cho DataHub</div>
+      <div class="pod-desc">MySQL: metadata storage, ES: search, Neo4j: lineage graph</div>
+      <div class="pod-port">MySQL: 3306 | ES: 9200 | Neo4j: 7474</div>
+    </div>
+  </div>
+</div>
+
+<!-- ORCHESTRATION NS -->
+<div class="ns-box plan">
+  <span class="ns-label">orchestration-ns (MLOps 2/3)</span>
+  <div class="pods-grid">
+    <div class="pod"><span class="pod-role all">ALL</span>
+      <div class="pod-name">airflow-webserver + scheduler + worker</div>
+      <div class="pod-image">image: apache/airflow:2.8</div>
+      <div class="pod-desc">DAGs: batch_pipeline, stream_monitor, training_trigger, rag_indexing</div>
+      <div class="pod-port">Web: 8080 | Flower: 5555 | CeleryExecutor</div>
+    </div>
+  </div>
+</div>
+
+<!-- ML PIPELINE NS -->
+<div class="ns-box plan">
+  <span class="ns-label">ml-pipeline-ns (MLOps 3)</span>
+  <div class="pods-grid">
+    <div class="pod"><span class="pod-role ds">DS</span>
+      <div class="pod-name">kubeflow-pipelines (KFP)</div>
+      <div class="pod-image">image: gcr.io/ml-pipeline/...</div>
+      <div class="pod-desc">ML Pipelines: validate -> transform -> tune -> train -> evaluate -> register</div>
+      <div class="pod-port">UI: 8888 | API: 8887</div>
+    </div>
+    <div class="pod"><span class="pod-role ds">DS</span>
+      <div class="pod-name">mlflow-server</div>
+      <div class="pod-image">image: mlflow/mlflow:2.10</div>
+      <div class="pod-desc">Experiment tracking, model registry, artifact store (MinIO)</div>
+      <div class="pod-port">UI: 5000 | Backend: PostgreSQL</div>
+    </div>
+    <div class="pod"><span class="pod-role ds">DS</span>
+      <div class="pod-name">katib-controller</div>
+      <div class="pod-image">image: docker.io/kubeflowkatib/...</div>
+      <div class="pod-desc">AutoML / Hyperparameter tuning (Ray Tune backend)</div>
+      <div class="pod-port">Port: 443 | Trial: SparkJob/PyTorchJob</div>
+    </div>
+    <div class="pod"><span class="pod-role ds">DS</span>
+      <div class="pod-name">kubeflow-notebooks</div>
+      <div class="pod-image">image: kubeflownotebooks/jupyter:latest</div>
+      <div class="pod-desc">JupyterLab cho DS thi nghiem, co GPU mount</div>
+      <div class="pod-port">Port: 8888 | PVC: workspace volume</div>
+    </div>
+  </div>
+</div>
+
+<!-- RAG NS -->
+<div class="ns-box rag">
+  <span class="ns-label">rag-ns (RAG/LLM)</span>
+  <div class="pods-grid">
+    <div class="pod"><span class="pod-role da">DA</span>
+      <div class="pod-name">weaviate</div>
+      <div class="pod-image">image: semitechnologies/weaviate:1.24</div>
+      <div class="pod-desc">Vector DB - hybrid search (dense + sparse). Index face metadata embeddings</div>
+      <div class="pod-port">HTTP: 8080 | gRPC: 50051</div>
+    </div>
+    <div class="pod"><span class="pod-role da">DA</span>
+      <div class="pod-name">typesense</div>
+      <div class="pod-image">image: typesense/typesense:0.25</div>
+      <div class="pod-desc">Instant search engine - metadata search (file name, category, date...)</div>
+      <div class="pod-port">Port: 8108 | API Key auth</div>
+    </div>
+    <div class="pod"><span class="pod-role ds">DS</span>
+      <div class="pod-name">ragflow</div>
+      <div class="pod-image">image: infiniflow/ragflow:latest</div>
+      <div class="pod-desc">RAG orchestrator: query -> retrieve -> rerank -> generate</div>
+      <div class="pod-port">Port: 9380 | UI: 80</div>
+    </div>
+    <div class="pod"><span class="pod-role ds">DS</span>
+      <div class="pod-name">kserve-embedding</div>
+      <div class="pod-image">image: sentence-transformers/all-MiniLM-L6-v2</div>
+      <div class="pod-desc">Text -> vector embeddings (KServe InferenceService)</div>
+      <div class="pod-port">Port: 8080 | GPU: optional</div>
+    </div>
+    <div class="pod"><span class="pod-role ds">DS</span>
+      <div class="pod-name">kserve-llm (vLLM)</div>
+      <div class="pod-image">image: vllm/vllm-openai:latest</div>
+      <div class="pod-desc">LLM inference: Llama3 / Mistral. Guardrails pre/post</div>
+      <div class="pod-port">Port: 8000 | GPU: 1+ | VRAM: 16GB+</div>
+    </div>
+    <div class="pod"><span class="pod-role ds">DS</span>
+      <div class="pod-name">langfuse</div>
+      <div class="pod-image">image: langfuse/langfuse:latest</div>
+      <div class="pod-desc">LLM observability: trace latency, token usage, RAG quality eval</div>
+      <div class="pod-port">Port: 3000 | DB: PostgreSQL</div>
+    </div>
+  </div>
+</div>
+
+<!-- AUTH NS -->
+<div class="ns-box infra">
+  <span class="ns-label">auth-ns (Infrastructure)</span>
+  <div class="pods-grid">
+    <div class="pod"><span class="pod-role all">ALL</span>
+      <div class="pod-name">keycloak</div>
+      <div class="pod-image">image: quay.io/keycloak/keycloak:23</div>
+      <div class="pod-desc">SSO + RBAC. Realm: face-detection. Clients: grafana, airflow, mlflow, datahub, kubeflow, ragflow</div>
+      <div class="pod-port">Port: 8080 | Admin: /admin | OIDC: /realms/face-detection</div>
+    </div>
+  </div>
+</div>
+
+<!-- OBSERVABILITY NS -->
+<div class="ns-box done">
+  <span class="ns-label">monitoring-ns (MLOps 1 - Done)</span>
+  <div class="pods-grid">
+    <div class="pod"><span class="pod-role dev">DEV</span>
+      <div class="pod-name">prometheus + grafana</div>
+      <div class="pod-image">image: prom/prometheus, grafana/grafana</div>
+      <div class="pod-desc">Metrics: pod CPU/mem, Kafka lag, model latency, request rate</div>
+      <div class="pod-port">Prom: 9090 | Grafana: 3000</div>
+    </div>
+    <div class="pod"><span class="pod-role dev">DEV</span>
+      <div class="pod-name">elasticsearch + kibana + logstash (ELK)</div>
+      <div class="pod-image">image: elastic/elasticsearch:8.x</div>
+      <div class="pod-desc">Log aggregation tu ALL pods. Index: app-*, data-*, ml-*</div>
+      <div class="pod-port">ES: 9200 | Kibana: 5601</div>
+    </div>
+    <div class="pod"><span class="pod-role dev">DEV</span>
+      <div class="pod-name">jaeger</div>
+      <div class="pod-image">image: jaegertracing/all-in-one:latest</div>
+      <div class="pod-desc">Distributed tracing: API -> KServe -> Kafka -> Spark</div>
+      <div class="pod-port">UI: 16686 | Collector: 14268</div>
+    </div>
+  </div>
+</div>
+
+<!-- ISTIO -->
+<div class="ns-box infra">
+  <span class="ns-label">istio-system (Infrastructure)</span>
+  <div class="pods-grid">
+    <div class="pod"><span class="pod-role dev">DEV</span>
+      <div class="pod-name">istiod + istio-ingressgateway</div>
+      <div class="pod-image">image: istio/istiod, istio/proxyv2</div>
+      <div class="pod-desc">Service mesh: mTLS, traffic mgmt, canary deploy, A/B test (Iter8)</div>
+      <div class="pod-port">Ingress: 80/443 | Control: 15012</div>
+    </div>
+    <div class="pod"><span class="pod-role dev">DEV</span>
+      <div class="pod-name">keda-operator</div>
+      <div class="pod-image">image: ghcr.io/kedacore/keda:2.13</div>
+      <div class="pod-desc">Event-driven autoscaling: Kafka lag -> scale KServe pods</div>
+      <div class="pod-port">Metrics: 8080 | ScaledObject per deployment</div>
+    </div>
+    <div class="pod"><span class="pod-role dev">DEV</span>
+      <div class="pod-name">nginx-ingress-controller</div>
+      <div class="pod-image">image: nginx/nginx-ingress:3.x</div>
+      <div class="pod-desc">External ingress, SSL termination, rate limiting</div>
+      <div class="pod-port">HTTP: 80 | HTTPS: 443</div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<!-- ==================== VIEW 2: DATA FLOW ==================== -->
+<div id="v-flow" class="view">
+<h2>Data Flows - Du lieu di tu dau den dau</h2>
+
+<div class="legend">
+  <span class="data-label img">IMAGE</span> Anh, video frame
+  <span class="data-label text">TEXT</span> Metadata, annotation
+  <span class="data-label log">LOG</span> Logs, events
+  <span class="data-label metric">METRIC</span> Metrics, scores
+  <span class="data-label vec">VECTOR</span> Embeddings
+</div>
+
+<!-- BATCH FLOW -->
+<div class="flow-section">
+  <div class="flow-title batch">BATCH FLOW: WIDER FACE Dataset -> Data Warehouse</div>
+  <div class="flow-steps">
+    <div class="flow-step wip">
+      <div class="step-name">WIDER FACE Dataset</div>
+      <div class="step-ns">Local / GCS</div>
+      <div class="step-data"><span class="data-label img">32K images</span> <span class="data-label text">annotations.txt</span></div>
+    </div>
+    <span class="flow-arrow">--></span>
+    <div class="flow-step wip">
+      <div class="step-name">Upload Script (Python)</div>
+      <div class="step-ns">Job in processing-ns</div>
+      <div class="step-data">Parse annotation, compute hash, partition by date</div>
+    </div>
+    <span class="flow-arrow">--></span>
+    <div class="flow-step wip">
+      <div class="step-name">MinIO raw/ bucket</div>
+      <div class="step-ns">storage-ns</div>
+      <div class="step-data"><span class="data-label img">images/YYYY/MM/DD/</span> <span class="data-label text">metadata.json</span></div>
+    </div>
+    <span class="flow-arrow">--></span>
+    <div class="flow-step plan">
+      <div class="step-name">Spark ETL - Bronze</div>
+      <div class="step-ns">processing-ns</div>
+      <div class="step-data"><span class="data-label text">Raw parquet, no transform</span></div>
+    </div>
+    <span class="flow-arrow">--></span>
+    <div class="flow-step plan">
+      <div class="step-name">Spark ETL - Silver</div>
+      <div class="step-ns">processing-ns</div>
+      <div class="step-data"><span class="data-label text">Clean, dedupe, normalize</span></div>
+    </div>
+    <span class="flow-arrow">--></span>
+    <div class="flow-step plan">
+      <div class="step-name">Spark ETL - Gold</div>
+      <div class="step-ns">processing-ns</div>
+      <div class="step-data"><span class="data-label metric">Aggregated metrics + dims</span></div>
+    </div>
+    <span class="flow-arrow">--></span>
+    <div class="flow-step plan">
+      <div class="step-name">PostgreSQL DW</div>
+      <div class="step-ns">storage-ns</div>
+      <div class="step-data"><span class="data-label text">dim_images, dim_categories, fact_detections</span></div>
+    </div>
+  </div>
+  <div class="tip"><strong>GE Validation:</strong> Great Expectations chay checkpoint o moi layer (Bronze, Silver, Gold). Neu fail -> alert qua Airflow -> log vao ELK.</div>
+</div>
+
+<!-- STREAM FLOW -->
+<div class="flow-section">
+  <div class="flow-title stream">STREAM FLOW: Camera/Video -> Kafka -> Inference -> Results</div>
+  <div class="flow-steps">
+    <div class="flow-step wip">
+      <div class="step-name">Video / Camera Feed</div>
+      <div class="step-ns">External source</div>
+      <div class="step-data"><span class="data-label img">Video frames (base64)</span></div>
+    </div>
+    <span class="flow-arrow">--></span>
+    <div class="flow-step wip">
+      <div class="step-name">Kafka Producer (Python)</div>
+      <div class="step-ns">streaming-ns</div>
+      <div class="step-data"><span class="data-label text">face.images.metadata</span> <span class="data-label text">face.annotations</span></div>
+    </div>
+    <span class="flow-arrow">--></span>
+    <div class="flow-step plan">
+      <div class="step-name">Flink Validation</div>
+      <div class="step-ns">processing-ns</div>
+      <div class="step-data">Schema check -> <span class="data-label text">face.validated</span> or <span class="data-label log">face.invalid</span></div>
+    </div>
+    <span class="flow-arrow">--></span>
+    <div class="flow-step plan">
+      <div class="step-name">KEDA scales up KServe</div>
+      <div class="step-ns">istio-system</div>
+      <div class="step-data"><span class="data-label metric">Kafka lag > threshold</span> -> scale pods</div>
+    </div>
+    <span class="flow-arrow">--></span>
+    <div class="flow-step done">
+      <div class="step-name">KServe (Kafka Source)</div>
+      <div class="step-ns">serving-ns</div>
+      <div class="step-data"><span class="data-label img">Consume image</span> -> YOLO detect -> <span class="data-label text">bbox + score</span></div>
+    </div>
+    <span class="flow-arrow">--></span>
+    <div class="flow-step done">
+      <div class="step-name">Kafka Results Topic</div>
+      <div class="step-ns">streaming-ns</div>
+      <div class="step-data"><span class="data-label text">face.detection.results</span></div>
+    </div>
+  </div>
+  <div class="flow-steps" style="margin-top:8px; padding-left:40px;">
+    <span class="flow-arrow" style="transform:rotate(90deg);display:inline-block;margin:0 8px;">|</span>
+    <span style="font-size:12px; color:#64748b;">Splits into:</span>
+    <span class="flow-arrow">--></span>
+    <div class="flow-step plan">
+      <div class="step-name">Spark Streaming</div>
+      <div class="step-ns">processing-ns</div>
+      <div class="step-data"><span class="data-label metric">Session metrics, face count</span></div>
+    </div>
+    <span class="flow-arrow">--></span>
+    <div class="flow-step plan">
+      <div class="step-name">Redis (online) + PostgreSQL (offline)</div>
+      <div class="step-ns">storage-ns</div>
+      <div class="step-data"><span class="data-label metric">Feature store</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- CDC FLOW -->
+<div class="flow-section">
+  <div class="flow-title cdc">CDC FLOW: Application DB -> Debezium -> Kafka -> Sync</div>
+  <div class="flow-steps">
+    <div class="flow-step plan">
+      <div class="step-name">Application PostgreSQL</div>
+      <div class="step-ns">default-ns</div>
+      <div class="step-data"><span class="data-label text">INSERT/UPDATE/DELETE on detections, users</span></div>
+    </div>
+    <span class="flow-arrow">--></span>
+    <div class="flow-step plan">
+      <div class="step-name">Debezium CDC</div>
+      <div class="step-ns">ingestion-ns</div>
+      <div class="step-data"><span class="data-label log">WAL capture -> JSON events</span></div>
+    </div>
+    <span class="flow-arrow">--></span>
+    <div class="flow-step wip">
+      <div class="step-name">Kafka CDC Topics</div>
+      <div class="step-ns">streaming-ns</div>
+      <div class="step-data"><span class="data-label text">app.public.detections</span> <span class="data-label text">app.public.users</span></div>
+    </div>
+    <span class="flow-arrow">--></span>
+    <div class="flow-step plan">
+      <div class="step-name">Spark Batch ETL</div>
+      <div class="step-ns">processing-ns</div>
+      <div class="step-data">Merge vao Bronze/Silver/Gold layers</div>
+    </div>
+  </div>
+</div>
+
+<!-- RAG FLOW -->
+<div class="flow-section">
+  <div class="flow-title rag-flow">RAG FLOW: Detection Data -> Embedding -> Vector Search -> LLM Answer</div>
+  <div class="flow-steps">
+    <div class="flow-step plan">
+      <div class="step-name">Kafka Results + DataHub Metadata + DW Gold</div>
+      <div class="step-ns">streaming-ns, metadata-ns, storage-ns</div>
+      <div class="step-data"><span class="data-label text">Detection results</span> <span class="data-label metric">Quality scores</span> <span class="data-label text">Image metadata</span></div>
+    </div>
+    <span class="flow-arrow">--></span>
+    <div class="flow-step rag-s">
+      <div class="step-name">Embedding Service (KServe)</div>
+      <div class="step-ns">rag-ns</div>
+      <div class="step-data"><span class="data-label text">text</span> -> <span class="data-label vec">vector (384-dim)</span></div>
+    </div>
+    <span class="flow-arrow">--></span>
+    <div class="flow-step rag-s">
+      <div class="step-name">Weaviate + Typesense</div>
+      <div class="step-ns">rag-ns</div>
+      <div class="step-data"><span class="data-label vec">Vector index</span> + <span class="data-label text">Metadata index</span></div>
+    </div>
+    <span class="flow-arrow">--></span>
+    <div class="flow-step rag-s">
+      <div class="step-name">RAGFlow Orchestrator</div>
+      <div class="step-ns">rag-ns</div>
+      <div class="step-data">Query -> Retrieve -> Rerank -> Generate</div>
+    </div>
+    <span class="flow-arrow">--></span>
+    <div class="flow-step rag-s">
+      <div class="step-name">LLM (vLLM / KServe)</div>
+      <div class="step-ns">rag-ns</div>
+      <div class="step-data"><span class="data-label text">Natural language answer + citations</span></div>
+    </div>
+  </div>
+  <div class="tip"><strong>Vi du query:</strong> "Tim tat ca anh co >5 khuon mat trong batch ngay 15/3" -> Typesense search metadata -> Weaviate vector similarity -> RAGFlow combine -> LLM generate answer.</div>
+</div>
+
+<!-- LOG FLOW -->
+<div class="flow-section">
+  <div class="flow-title" style="color:var(--done); border-color:var(--done);">LOG FLOW: Moi pod -> ELK -> Grafana Alert</div>
+  <div class="flow-steps">
+    <div class="flow-step done">
+      <div class="step-name">ALL Pods (sidecar)</div>
+      <div class="step-ns">Every namespace</div>
+      <div class="step-data"><span class="data-label log">stdout/stderr logs</span></div>
+    </div>
+    <span class="flow-arrow">--></span>
+    <div class="flow-step done">
+      <div class="step-name">Logstash / Filebeat</div>
+      <div class="step-ns">monitoring-ns</div>
+      <div class="step-data"><span class="data-label log">Collect + parse + enrich</span></div>
+    </div>
+    <span class="flow-arrow">--></span>
+    <div class="flow-step done">
+      <div class="step-name">Elasticsearch</div>
+      <div class="step-ns">monitoring-ns</div>
+      <div class="step-data"><span class="data-label log">Index: app-*, data-*, ml-*, rag-*</span></div>
+    </div>
+    <span class="flow-arrow">--></span>
+    <div class="flow-step done">
+      <div class="step-name">Kibana Dashboard</div>
+      <div class="step-ns">monitoring-ns</div>
+      <div class="step-data">Visualize, search, alert</div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<!-- ==================== VIEW 3: ROLES & ACCESS ==================== -->
+<div id="v-roles" class="view">
+<h2>Roles & Access - Ai dung gi?</h2>
+
+<table class="role-table">
+  <thead>
+    <tr>
+      <th>Tool / Dashboard</th>
+      <th>URL (via Istio Ingress)</th>
+      <th>Ai dung?</th>
+      <th>Lam gi?</th>
+      <th>Namespace</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>FastAPI Swagger</strong></td>
+      <td>api.face-detect.dev/docs</td>
+      <td><span class="role-badge dev">DEV</span></td>
+      <td>Test API endpoint, xem response format</td>
+      <td>serving-ns</td>
+    </tr>
+    <tr>
+      <td><strong>Grafana</strong></td>
+      <td>grafana.face-detect.dev</td>
+      <td><span class="role-badge dev">DEV</span> <span class="role-badge da">DA</span></td>
+      <td>Monitor: CPU/mem, Kafka lag, model latency, request rate, data pipeline metrics</td>
+      <td>monitoring-ns</td>
+    </tr>
+    <tr>
+      <td><strong>Kibana</strong></td>
+      <td>kibana.face-detect.dev</td>
+      <td><span class="role-badge dev">DEV</span></td>
+      <td>Xem logs cua tat ca pods, debug errors, search log patterns</td>
+      <td>monitoring-ns</td>
+    </tr>
+    <tr>
+      <td><strong>Jaeger</strong></td>
+      <td>jaeger.face-detect.dev</td>
+      <td><span class="role-badge dev">DEV</span></td>
+      <td>Distributed tracing: theo doi request tu API -> KServe -> Kafka</td>
+      <td>monitoring-ns</td>
+    </tr>
+    <tr>
+      <td><strong>Jenkins</strong></td>
+      <td>jenkins.face-detect.dev</td>
+      <td><span class="role-badge dev">DEV</span></td>
+      <td>CI/CD pipeline: build Docker image, run tests, deploy Helm charts</td>
+      <td>ci-ns</td>
+    </tr>
+    <tr>
+      <td><strong>MinIO Console</strong></td>
+      <td>minio.face-detect.dev</td>
+      <td><span class="role-badge da">DA</span> <span class="role-badge ds">DS</span></td>
+      <td>Browse buckets (raw/bronze/silver/gold/models), upload data, check storage</td>
+      <td>storage-ns</td>
+    </tr>
+    <tr>
+      <td><strong>Airflow</strong></td>
+      <td>airflow.face-detect.dev</td>
+      <td><span class="role-badge da">DA</span></td>
+      <td>Manage DAGs: batch_pipeline, stream_monitor, training_trigger, rag_indexing</td>
+      <td>orchestration-ns</td>
+    </tr>
+    <tr>
+      <td><strong>DataHub</strong></td>
+      <td>datahub.face-detect.dev</td>
+      <td><span class="role-badge da">DA</span> <span class="role-badge ds">DS</span></td>
+      <td>Xem metadata catalog, data lineage, quality scores, search datasets</td>
+      <td>metadata-ns</td>
+    </tr>
+    <tr>
+      <td><strong>MLflow</strong></td>
+      <td>mlflow.face-detect.dev</td>
+      <td><span class="role-badge ds">DS</span></td>
+      <td>Experiment tracking, compare runs, model registry, deploy model version</td>
+      <td>ml-pipeline-ns</td>
+    </tr>
+    <tr>
+      <td><strong>Kubeflow Dashboard</strong></td>
+      <td>kubeflow.face-detect.dev</td>
+      <td><span class="role-badge ds">DS</span></td>
+      <td>Run ML pipelines, launch Notebooks, AutoML (Katib), manage experiments</td>
+      <td>ml-pipeline-ns</td>
+    </tr>
+    <tr>
+      <td><strong>KServe UI</strong></td>
+      <td>kserve.face-detect.dev</td>
+      <td><span class="role-badge ds">DS</span> <span class="role-badge dev">DEV</span></td>
+      <td>Xem InferenceServices, model versions, traffic split, logs</td>
+      <td>serving-ns</td>
+    </tr>
+    <tr>
+      <td><strong>Ray Dashboard</strong></td>
+      <td>ray.face-detect.dev</td>
+      <td><span class="role-badge ds">DS</span></td>
+      <td>Monitor Ray cluster: actors, tasks, GPU usage, batch queue</td>
+      <td>serving-ns</td>
+    </tr>
+    <tr>
+      <td><strong>RAGFlow</strong></td>
+      <td>ragflow.face-detect.dev</td>
+      <td><span class="role-badge da">DA</span> <span class="role-badge ds">DS</span></td>
+      <td>Hoi Q&A ve face data, xem knowledge base, test retrieval quality</td>
+      <td>rag-ns</td>
+    </tr>
+    <tr>
+      <td><strong>Langfuse</strong></td>
+      <td>langfuse.face-detect.dev</td>
+      <td><span class="role-badge ds">DS</span></td>
+      <td>LLM observability: trace, latency, token cost, RAG eval scores</td>
+      <td>rag-ns</td>
+    </tr>
+    <tr>
+      <td><strong>Keycloak Admin</strong></td>
+      <td>auth.face-detect.dev/admin</td>
+      <td><span class="role-badge admin">ADMIN</span></td>
+      <td>Quan ly users, roles, groups, SSO clients. Phan quyen cho tat ca dashboards</td>
+      <td>auth-ns</td>
+    </tr>
+    <tr>
+      <td><strong>Spark UI</strong></td>
+      <td>spark.face-detect.dev</td>
+      <td><span class="role-badge da">DA</span></td>
+      <td>Monitor Spark jobs: ETL progress, stage details, shuffle metrics</td>
+      <td>processing-ns</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Role Summary</h3>
+<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:16px;">
+  <div style="background:#dbeafe; padding:16px; border-radius:12px; border:2px solid #93c5fd;">
+    <h4 style="color:#1d4ed8; margin-bottom:8px;">Data Scientist (DS)</h4>
+    <p style="font-size:13px; color:#1e3a5f;">
+      <strong>Nhiem vu:</strong> Train model, tune hyperparameter, evaluate, deploy model moi<br>
+      <strong>Tools chinh:</strong> Kubeflow Notebooks, MLflow, Katib, KServe, Ray Dashboard, Langfuse<br>
+      <strong>Data:</strong> Doc tu MinIO (gold/), DW. Ghi vao Model Registry (MLflow + MinIO models/)<br>
+      <strong>Output:</strong> Model artifacts (.pt, .onnx) -> Model Registry -> KServe auto-deploy
+    </p>
+  </div>
+  <div style="background:#dcfce7; padding:16px; border-radius:12px; border:2px solid #86efac;">
+    <h4 style="color:#15803d; margin-bottom:8px;">Developer / DevOps (DEV)</h4>
+    <p style="font-size:13px; color:#14532d;">
+      <strong>Nhiem vu:</strong> Build API, CI/CD, infra (Terraform/Ansible), monitoring, security<br>
+      <strong>Tools chinh:</strong> Jenkins, Grafana, Kibana, Jaeger, Istio, KEDA, Helm charts<br>
+      <strong>Data:</strong> Logs (ELK), metrics (Prometheus), traces (Jaeger)<br>
+      <strong>Output:</strong> Docker images, Helm releases, Terraform state, CI/CD pipelines
+    </p>
+  </div>
+  <div style="background:#fef9c3; padding:16px; border-radius:12px; border:2px solid #fde047;">
+    <h4 style="color:#a16207; margin-bottom:8px;">Data Analyst / Engineer (DA)</h4>
+    <p style="font-size:13px; color:#713f12;">
+      <strong>Nhiem vu:</strong> Build data pipeline, data quality, metadata management, RAG Q&A<br>
+      <strong>Tools chinh:</strong> Airflow, Spark, Flink, Great Expectations, DataHub, MinIO, RAGFlow<br>
+      <strong>Data:</strong> Raw images -> Bronze -> Silver -> Gold. Kafka streams. CDC events.<br>
+      <strong>Output:</strong> Clean datasets, quality reports, DAG definitions, lineage graphs
+    </p>
+  </div>
+  <div style="background:#fee2e2; padding:16px; border-radius:12px; border:2px solid #fca5a5;">
+    <h4 style="color:#991b1b; margin-bottom:8px;">Admin (ADMIN)</h4>
+    <p style="font-size:13px; color:#450a0a;">
+      <strong>Nhiem vu:</strong> Quan ly user accounts, phan quyen (RBAC), SSO configuration<br>
+      <strong>Tools chinh:</strong> Keycloak Admin Console<br>
+      <strong>Phan quyen:</strong> Tao roles (ds-role, dev-role, da-role), assign users, manage groups<br>
+      <strong>Clients:</strong> Register OIDC clients cho moi dashboard (Grafana, Airflow, MLflow...)
+    </p>
+  </div>
+</div>
+
+</div>
+
+<!-- ==================== VIEW 4: SSO & SECURITY ==================== -->
+<div id="v-auth" class="view">
+<h2>SSO & Security - Keycloak + Istio</h2>
+
+<div class="flow-section">
+  <div class="flow-title auth">SSO Login Flow - Nguoi dung login 1 lan, truy cap tat ca dashboards</div>
+
+  <div class="auth-flow-container">
+    <div class="auth-box">
+      <h4>Buoc 1: User truy cap bat ky dashboard</h4>
+      <div class="auth-step"><span class="auth-num">1</span> User go: <code>grafana.face-detect.dev</code></div>
+      <div class="auth-step"><span class="auth-num">2</span> Istio EnvoyFilter bat request -> check cookie <code>_oauth2_proxy</code></div>
+      <div class="auth-step"><span class="auth-num">3</span> Khong co cookie -> redirect den <code>auth.face-detect.dev/realms/face-detection/protocol/openid-connect/auth</code></div>
+    </div>
+
+    <div class="auth-box">
+      <h4>Buoc 2: Keycloak xac thuc</h4>
+      <div class="auth-step"><span class="auth-num">4</span> User nhap username/password (hoac SSO qua Google/GitHub/LDAP)</div>
+      <div class="auth-step"><span class="auth-num">5</span> Keycloak xac thuc -> tao JWT token chua: user_id, roles[], groups[]</div>
+      <div class="auth-step"><span class="auth-num">6</span> Redirect ve <code>grafana.face-detect.dev</code> voi authorization code</div>
+    </div>
+
+    <div class="auth-box">
+      <h4>Buoc 3: OAuth2 Proxy xu ly token</h4>
+      <div class="auth-step"><span class="auth-num">7</span> OAuth2 Proxy (sidecar trong Istio) doi code lay access_token + id_token</div>
+      <div class="auth-step"><span class="auth-num">8</span> Set cookie <code>_oauth2_proxy</code> cho domain <code>*.face-detect.dev</code></div>
+      <div class="auth-step"><span class="auth-num">9</span> Cac lan sau: cookie hop le -> khong can login lai -> SSO across ALL dashboards</div>
+    </div>
+
+    <div class="auth-box">
+      <h4>Buoc 4: RBAC - Phan quyen theo Role</h4>
+      <div class="auth-step"><span class="auth-num">10</span> JWT chua role claim: <code>{"roles": ["ds-role"]}</code></div>
+      <div class="auth-step"><span class="auth-num">11</span> Moi dashboard doc role tu JWT -> hien thi features tuong ung</div>
+      <div class="auth-step"><span class="auth-num">12</span> VD: ds-role thay MLflow + Kubeflow, nhung KHONG thay Jenkins admin</div>
+    </div>
+  </div>
+</div>
+
+<h3>Keycloak Configuration</h3>
+<table class="role-table">
+  <thead>
+    <tr><th>Keycloak Concept</th><th>Value</th><th>Giai thich</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>Realm</strong></td><td><code>face-detection</code></td><td>Toan bo he thong dung 1 realm</td></tr>
+    <tr><td><strong>Roles</strong></td><td><code>ds-role, dev-role, da-role, admin-role</code></td><td>4 roles chinh, assign cho users</td></tr>
+    <tr><td><strong>Groups</strong></td><td><code>data-team, ml-team, platform-team</code></td><td>Group users -> bulk assign roles</td></tr>
+    <tr><td><strong>Clients (OIDC)</strong></td><td><code>grafana, airflow, mlflow, kubeflow, datahub, ragflow, minio, jenkins, kibana</code></td><td>Moi dashboard = 1 OIDC client trong Keycloak</td></tr>
+    <tr><td><strong>Identity Provider</strong></td><td><code>Google / GitHub / LDAP</code> (optional)</td><td>User co the login bang Google account thay vi tao account moi</td></tr>
+    <tr><td><strong>Token lifetime</strong></td><td>Access: 5min, Refresh: 30min, SSO: 8h</td><td>SSO session 8h = login 1 lan/ngay</td></tr>
+  </tbody>
+</table>
+
+<h3>Istio mTLS - Service-to-Service Security</h3>
+<div class="tip">
+  <strong>mTLS (mutual TLS):</strong> Moi pod trong mesh co Envoy sidecar tu dong encrypt traffic giua cac services. VD: FastAPI -> KServe, Kafka -> Spark deu duoc ma hoa. Khong can config SSL cho tung service.
+</div>
+
+<table class="role-table">
+  <thead><tr><th>Security Feature</th><th>Tool</th><th>Scope</th></tr></thead>
+  <tbody>
+    <tr><td>SSO Login</td><td>Keycloak + OAuth2 Proxy</td><td>Tat ca web dashboards</td></tr>
+    <tr><td>RBAC (role-based)</td><td>Keycloak roles -> JWT claims</td><td>Per-dashboard feature access</td></tr>
+    <tr><td>mTLS encryption</td><td>Istio Envoy sidecar</td><td>ALL pod-to-pod traffic</td></tr>
+    <tr><td>API authentication</td><td>Istio RequestAuthentication + JWT</td><td>FastAPI, KServe endpoints</td></tr>
+    <tr><td>Network policy</td><td>Kubernetes NetworkPolicy</td><td>Namespace isolation (VD: rag-ns chi noi voi streaming-ns)</td></tr>
+    <tr><td>SSL termination</td><td>NGINX Ingress + cert-manager</td><td>External HTTPS</td></tr>
+    <tr><td>Secret management</td><td>K8s Secrets (+ Sealed Secrets option)</td><td>DB passwords, API keys, MinIO credentials</td></tr>
+  </tbody>
+</table>
+
+</div>
+
+<!-- ==================== VIEW 5: deployKF ==================== -->
+<div id="v-deploykf" class="view">
+<h2>deployKF - Platform Deployment Tool</h2>
+
+<div class="deploykf-section">
+  <h3>deployKF la gi?</h3>
+  <p style="font-size:14px; margin-bottom:12px; opacity:0.9;">
+    deployKF la mot open-source platform ket hop Kubeflow + Airflow + MLflow thanh mot he thong duy nhat, deploy tren Kubernetes thong qua ArgoCD (GitOps). No giai quyet van de phai config tung tool rieng le.
+  </p>
+  <div class="deploykf-grid">
+    <div class="deploykf-card">
+      <h4>Kubeflow Pipelines (KFP)</h4>
+      <p>ML workflow orchestration, pipeline UI, experiment tracking</p>
+    </div>
+    <div class="deploykf-card">
+      <h4>Kubeflow Notebooks</h4>
+      <p>JupyterLab/VSCode truc tiep tren K8s voi GPU support</p>
+    </div>
+    <div class="deploykf-card">
+      <h4>Katib (AutoML)</h4>
+      <p>Hyperparameter tuning, neural architecture search</p>
+    </div>
+    <div class="deploykf-card">
+      <h4>KServe</h4>
+      <p>Model serving, autoscaling, canary deployments</p>
+    </div>
+    <div class="deploykf-card">
+      <h4>MLflow (tich hop)</h4>
+      <p>Experiment tracking + model registry</p>
+    </div>
+    <div class="deploykf-card">
+      <h4>Airflow (tich hop)</h4>
+      <p>DAG orchestration cho data + ML pipelines</p>
+    </div>
+    <div class="deploykf-card">
+      <h4>Istio Service Mesh</h4>
+      <p>mTLS, traffic management, built-in</p>
+    </div>
+    <div class="deploykf-card">
+      <h4>Dex Authentication</h4>
+      <p>SSO giong Keycloak, OIDC, ket noi LDAP/Google</p>
+    </div>
+    <div class="deploykf-card">
+      <h4>ArgoCD (GitOps)</h4>
+      <p>Deploy + upgrade toan bo platform qua Git</p>
+    </div>
+    <div class="deploykf-card">
+      <h4>MinIO (embedded)</h4>
+      <p>Object storage cho artifacts, datasets</p>
+    </div>
+    <div class="deploykf-card">
+      <h4>cert-manager</h4>
+      <p>Tu dong generate va renew TLS certificates</p>
+    </div>
+    <div class="deploykf-card">
+      <h4>Kyverno</h4>
+      <p>Policy engine cho K8s security</p>
+    </div>
+  </div>
+</div>
+
+<h3>So sanh: Cach hien tai vs. Dung deployKF</h3>
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
+  <div style="background:#fff; padding:20px; border-radius:12px; border:2px solid #fca5a5;">
+    <h4 style="color:#dc2626; margin-bottom:12px;">Cach hien tai: Config thu cong tung tool</h4>
+    <p style="font-size:13px; line-height:1.7;">
+      - Helm install Kubeflow rieng<br>
+      - Helm install MLflow rieng<br>
+      - Helm install Airflow rieng<br>
+      - Helm install Istio rieng<br>
+      - Config Keycloak OIDC cho tung tool<br>
+      - Tu viet Terraform/Ansible cho tung component<br>
+      - Tu manage version compatibility<br>
+      - <strong>Uu diem:</strong> Hieu sau, control tung chi tiet, tot cho hoc tap<br>
+      - <strong>Nhuoc diem:</strong> Mat thoi gian, de gap version conflict
+    </p>
+  </div>
+  <div style="background:#fff; padding:20px; border-radius:12px; border:2px solid #86efac;">
+    <h4 style="color:#16a34a; margin-bottom:12px;">Dung deployKF: 1 command deploy tat ca</h4>
+    <p style="font-size:13px; line-height:1.7;">
+      - 1 values.yaml chua toan bo config<br>
+      - ArgoCD tu dong sync + deploy<br>
+      - Dex SSO da tich hop san (thay Keycloak)<br>
+      - Istio da config san<br>
+      - MinIO da tich hop san<br>
+      - Upgrade in-place: doi version trong values.yaml<br>
+      - <strong>Uu diem:</strong> Nhanh, it loi, auto-upgrade, production-ready<br>
+      - <strong>Nhuoc diem:</strong> Phu thuoc ArgoCD, kho custom deep, Dex thay vi Keycloak
+    </p>
+  </div>
+</div>
+
+<div class="warn">
+  <strong>Khuyen nghi cho do an:</strong> Voi do an hoc tap, nen lam CA HAI cach: (1) Dung deployKF de co baseline nhanh va hieu cach mot production platform hoat dong, (2) Tu config tung tool de hieu sau. Trong bao cao, so sanh 2 cach se la diem cong lon.
+</div>
+
+<h3>Tools deployKF KHONG co - Can them rieng</h3>
+<table class="compare-table">
+  <thead>
+    <tr><th>Tool</th><th>deployKF co?</th><th>Ban can?</th><th>Giai phap</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Kafka + Schema Registry</td><td><span class="tag-no">Khong</span></td><td><span class="tag-yes">Co</span></td><td>Helm install rieng (Strimzi operator hoac Bitnami chart)</td></tr>
+    <tr><td>Spark / Flink</td><td><span class="tag-no">Khong</span></td><td><span class="tag-yes">Co</span></td><td>Helm install rieng (Spark Operator, Flink K8s)</td></tr>
+    <tr><td>Debezium CDC</td><td><span class="tag-no">Khong</span></td><td><span class="tag-yes">Co</span></td><td>Deploy voi Kafka Connect</td></tr>
+    <tr><td>Great Expectations</td><td><span class="tag-no">Khong</span></td><td><span class="tag-yes">Co</span></td><td>Python package trong Airflow DAGs hoac standalone</td></tr>
+    <tr><td>DataHub</td><td><span class="tag-no">Khong</span></td><td><span class="tag-yes">Co</span></td><td>Helm chart rieng (datahub-helm)</td></tr>
+    <tr><td>Weaviate</td><td><span class="tag-no">Khong</span></td><td><span class="tag-yes">Co</span></td><td>Helm chart rieng</td></tr>
+    <tr><td>Typesense</td><td><span class="tag-no">Khong</span></td><td><span class="tag-yes">Co</span></td><td>Helm chart rieng</td></tr>
+    <tr><td>RAGFlow</td><td><span class="tag-no">Khong</span></td><td><span class="tag-yes">Co</span></td><td>Docker / Helm deploy rieng</td></tr>
+    <tr><td>Langfuse</td><td><span class="tag-no">Khong</span></td><td><span class="tag-yes">Co</span></td><td>Helm chart rieng</td></tr>
+    <tr><td>KEDA</td><td><span class="tag-no">Khong</span></td><td><span class="tag-yes">Co</span></td><td>Helm install (kedacore/keda)</td></tr>
+    <tr><td>Keycloak</td><td><span class="tag-partial">Co Dex thay the</span></td><td><span class="tag-partial">Optional</span></td><td>Dex la lightweight hon. Keycloak manh hon nhung phuc tap hon</td></tr>
+    <tr><td>ELK Stack</td><td><span class="tag-no">Khong</span></td><td><span class="tag-yes">Co (da co)</span></td><td>Giu nguyen ELK hien tai</td></tr>
+    <tr><td>Prometheus + Grafana</td><td><span class="tag-no">Khong (rieng)</span></td><td><span class="tag-yes">Co (da co)</span></td><td>Giu nguyen monitoring stack hien tai</td></tr>
+  </tbody>
+</table>
+
+<div class="tip">
+  <strong>Ket luan:</strong> deployKF giup ban tiet kiem ~40% effort cho phan ML Platform (Kubeflow + MLflow + Airflow + KServe + Istio + MinIO + Auth). Nhung phan Data Engineering (Kafka, Spark, Flink, GE, DataHub) va RAG (Weaviate, Typesense, RAGFlow, Langfuse) van phai config rieng. Cach tiep can tot nhat: deployKF lam core platform + Helm charts rieng cho data/RAG tools.
+</div>
+
+</div>
+
+<!-- ==================== VIEW 6: ROADMAP ==================== -->
+<div id="v-roadmap" class="view">
+<h2>Roadmap - 3 Phases</h2>
+
+<div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;">
+  <div style="background:var(--done-bg); padding:20px; border-radius:12px; border:2px solid var(--done);">
+    <h3 style="color:var(--done); margin-top:0;">Phase 1: MLOps 1 (Done)</h3>
+    <p style="font-size:13px; line-height:1.8;">
+      <strong>Serving:</strong> FastAPI + YOLOv11 face detection<br>
+      <strong>Infra:</strong> GKE + Terraform + Ansible<br>
+      <strong>CI/CD:</strong> Jenkins pipeline<br>
+      <strong>Monitoring:</strong> Prometheus + Grafana + ELK + Jaeger<br>
+      <strong>Ingress:</strong> NGINX<br>
+      <strong>Docker:</strong> Multi-stage Dockerfile<br>
+      <strong>Helm:</strong> Charts cho tat ca services
+    </p>
+  </div>
+
+  <div style="background:var(--wip-bg); padding:20px; border-radius:12px; border:2px solid var(--wip);">
+    <h3 style="color:var(--wip); margin-top:0;">Phase 2: MLOps 2 (Data Eng)</h3>
+    <p style="font-size:13px; line-height:1.8;">
+      <strong>Week 1-2:</strong> Kafka KRaft + MinIO (da lam)<br>
+      <strong>Week 3-4:</strong> Spark ETL (Bronze/Silver/Gold)<br>
+      <strong>Week 5:</strong> Flink stream validation<br>
+      <strong>Week 6:</strong> Great Expectations checkpoints<br>
+      <strong>Week 7:</strong> Debezium CDC setup<br>
+      <strong>Week 8:</strong> DataHub metadata + lineage<br>
+      <strong>Week 9:</strong> Airflow DAGs<br>
+      <strong>Week 10:</strong> DVC data versioning<br>
+      <strong>Tong:</strong> ~10 weeks
+    </p>
+  </div>
+
+  <div style="background:var(--plan-bg); padding:20px; border-radius:12px; border:2px solid var(--plan);">
+    <h3 style="color:var(--plan); margin-top:0;">Phase 3: MLOps 3 (Advanced + RAG)</h3>
+    <p style="font-size:13px; line-height:1.8;">
+      <strong>Week 1-2:</strong> deployKF hoac Kubeflow manual<br>
+      <strong>Week 3:</strong> MLflow + Model Registry<br>
+      <strong>Week 4:</strong> KServe InferenceService<br>
+      <strong>Week 5:</strong> RayServe + KEDA autoscaling<br>
+      <strong>Week 6:</strong> Istio service mesh + Iter8 A/B<br>
+      <strong>Week 7:</strong> Keycloak SSO<br>
+      <strong>Week 8-9:</strong> RAG pipeline (Weaviate + Typesense + RAGFlow)<br>
+      <strong>Week 10:</strong> LLM inference + Langfuse<br>
+      <strong>Tong:</strong> ~10 weeks
+    </p>
+  </div>
+</div>
+
+<div class="warn" style="margin-top:20px;">
+  <strong>Luu y:</strong> Timeline la uoc tinh. Moi tool co the mat 2-5 ngay de cai dat + test tren K8s. Nen lam tung tool, test ky, roi moi chuyen sang tool tiep theo. Dung co gang lam tat ca cung luc.
+</div>
+
+</div>
+
+<script>
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>

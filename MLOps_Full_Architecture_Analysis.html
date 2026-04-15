@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MLOps Full Architecture - Face Detection System Analysis</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f172a; color: #e2e8f0; line-height: 1.6; }
+.container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+h1 { text-align: center; font-size: 2em; margin: 20px 0; background: linear-gradient(135deg, #3b82f6, #8b5cf6, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+h2 { font-size: 1.4em; margin: 15px 0 10px; color: #60a5fa; border-bottom: 2px solid #1e3a5f; padding-bottom: 5px; }
+h3 { font-size: 1.1em; color: #a78bfa; margin: 10px 0 5px; }
+
+.tabs { display: flex; gap: 4px; margin-bottom: 0; flex-wrap: wrap; }
+.tab { padding: 10px 20px; cursor: pointer; border-radius: 8px 8px 0 0; background: #1e293b; color: #94a3b8; font-weight: 600; transition: all 0.3s; border: 1px solid #334155; border-bottom: none; }
+.tab.active { background: #1e3a5f; color: #60a5fa; border-color: #3b82f6; }
+.tab:hover { background: #1e3a5f; color: #93c5fd; }
+
+.tab-content { display: none; background: #1e293b; border: 1px solid #334155; border-radius: 0 8px 8px 8px; padding: 25px; min-height: 500px; }
+.tab-content.active { display: block; }
+
+.card { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 15px; margin: 10px 0; }
+.card.green { border-left: 4px solid #22c55e; }
+.card.blue { border-left: 4px solid #3b82f6; }
+.card.purple { border-left: 4px solid #8b5cf6; }
+.card.orange { border-left: 4px solid #f59e0b; }
+.card.red { border-left: 4px solid #ef4444; }
+.card.pink { border-left: 4px solid #ec4899; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 15px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+@media (max-width: 1100px) { .grid-3 { grid-template-columns: 1fr; } }
+
+.badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75em; font-weight: 600; margin: 2px; }
+.badge-green { background: #064e3b; color: #34d399; }
+.badge-blue { background: #1e3a5f; color: #60a5fa; }
+.badge-purple { background: #3b0764; color: #c084fc; }
+.badge-orange { background: #451a03; color: #fbbf24; }
+.badge-red { background: #450a0a; color: #f87171; }
+.badge-pink { background: #500724; color: #f472b6; }
+.badge-done { background: #14532d; color: #4ade80; }
+.badge-wip { background: #713f12; color: #facc15; }
+.badge-plan { background: #1e1b4b; color: #818cf8; }
+
+.arrow { text-align: center; font-size: 2em; color: #475569; margin: 5px 0; }
+.flow-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 10px 0; }
+.flow-box { background: #1e293b; border: 1px solid #475569; border-radius: 6px; padding: 8px 14px; font-size: 0.85em; text-align: center; min-width: 120px; }
+.flow-arrow { color: #60a5fa; font-size: 1.2em; }
+
+table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+th { background: #1e3a5f; padding: 10px; text-align: left; font-size: 0.85em; }
+td { padding: 8px 10px; border-bottom: 1px solid #334155; font-size: 0.85em; }
+tr:hover { background: #1e293b; }
+
+.highlight { background: linear-gradient(135deg, #1e3a5f, #1e1b4b); border: 1px solid #3b82f6; border-radius: 8px; padding: 15px; margin: 15px 0; }
+
+.mermaid-like { background: #0f172a; border: 1px solid #475569; border-radius: 8px; padding: 20px; font-family: monospace; font-size: 0.8em; white-space: pre; overflow-x: auto; line-height: 1.8; }
+
+ul { margin: 5px 0 5px 20px; }
+li { margin: 3px 0; font-size: 0.9em; }
+.small { font-size: 0.8em; color: #94a3b8; }
+</style>
+</head>
+<body>
+<div class="container">
+<h1>MLOps Full Stack Architecture - Face Detection System</h1>
+<p style="text-align:center;color:#94a3b8;margin-bottom:20px;">Phân tích tổng hợp: MLOps 1 (Serving) + MLOps 2 (Data) + MLOps 3 (Advanced/LLM) &bull; Hoàng Đức Long</p>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('overview')">Tổng Quan</div>
+  <div class="tab" onclick="showTab('mlops1')">MLOps 1 - Serving</div>
+  <div class="tab" onclick="showTab('mlops2')">MLOps 2 - Data</div>
+  <div class="tab" onclick="showTab('mlops3')">MLOps 3 - Advanced</div>
+  <div class="tab" onclick="showTab('rag')">RAG Pipeline</div>
+  <div class="tab" onclick="showTab('compare')">So Sánh Top Projects</div>
+  <div class="tab" onclick="showTab('roadmap')">Roadmap</div>
+</div>
+
+<!-- TAB 1: TỔNG QUAN -->
+<div id="overview" class="tab-content active">
+<h2>Bức Tranh Tổng Quát - Unified MLOps Platform</h2>
+
+<div class="highlight">
+<h3>Kiến Trúc Tổng Thể (7 Layers)</h3>
+<div class="mermaid-like">
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                          🔒 SECURITY & ACCESS (Keycloak + Istio)                    │
+├─────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                     │
+│  ┌─────────────┐  ┌──────────────┐  ┌─────────────┐  ┌──────────────────────────┐  │
+│  │  📊 DATA     │  │  🏋️ TRAINING  │  │  🚀 SERVING  │  │  🤖 LLM/RAG PIPELINE    │  │
+│  │  PIPELINE    │  │  PIPELINE     │  │  PIPELINE    │  │                          │  │
+│  │             │  │              │  │             │  │  RAGFlow / Typesense     │  │
+│  │  Kafka      │  │  Kubeflow    │  │  KServe     │  │  Weaviate / Embedding    │  │
+│  │  Spark      │  │  Ray Tune    │  │  RayServe   │  │  LLM Inference           │  │
+│  │  Flink      │  │  MLflow      │  │  KEDA       │  │  Guardrails              │  │
+│  │  Airflow    │  │  DVC         │  │  Istio      │  │                          │  │
+│  │  MinIO      │  │              │  │             │  │                          │  │
+│  └──────┬──────┘  └──────┬───────┘  └──────┬──────┘  └────────────┬─────────────┘  │
+│         │                │                 │                      │               │
+│  ┌──────▼──────────────────▼─────────────────▼──────────────────────▼──────────────┐  │
+│  │                    📋 DATA QUALITY & METADATA LAYER                             │  │
+│  │         Great Expectations (Validation) + DataHub (Lineage/Catalog)             │  │
+│  └────────────────────────────────────────────────────────────────────────────────┘  │
+│                                                                                     │
+│  ┌────────────────────────────────────────────────────────────────────────────────┐  │
+│  │                        👁️ OBSERVABILITY LAYER                                  │  │
+│  │    Prometheus + Grafana │ ELK Stack │ Jaeger │ OpenTelemetry │ Langfuse (LLM)  │  │
+│  └────────────────────────────────────────────────────────────────────────────────┘  │
+│                                                                                     │
+│  ┌────────────────────────────────────────────────────────────────────────────────┐  │
+│  │                     ⚙️ INFRASTRUCTURE LAYER (GKE + Terraform + Ansible)        │  │
+│  │              Jenkins CI/CD │ Helm Charts │ Docker │ Kubernetes Namespaces       │  │
+│  └────────────────────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────────────┘
+</div>
+</div>
+
+<h3>Phân Chia Scope Theo Khoá Học</h3>
+<div class="grid-3">
+  <div class="card green">
+    <h3>MLOps 1 - Model Serving <span class="badge badge-done">DONE</span></h3>
+    <p>Triển khai ML model lên production với CI/CD và monitoring đầy đủ.</p>
+    <ul>
+      <li>YOLOv11 Face Detection API (FastAPI)</li>
+      <li>GKE + Terraform + Ansible IaC</li>
+      <li>Jenkins CI/CD Pipeline</li>
+      <li>Prometheus + Grafana + ELK + Jaeger</li>
+      <li>Helm charts, Nginx Ingress</li>
+    </ul>
+  </div>
+  <div class="card orange">
+    <h3>MLOps 2 - Data Engineering <span class="badge badge-wip">WIP</span></h3>
+    <p>Xây dựng data pipeline hoàn chỉnh: batch + streaming + validation + metadata.</p>
+    <ul>
+      <li>Kafka + Schema Registry (streaming)</li>
+      <li>MinIO (data lake)</li>
+      <li>Spark/Flink (processing)</li>
+      <li>Great Expectations (validation)</li>
+      <li>DataHub (metadata/lineage)</li>
+      <li>Airflow (orchestration)</li>
+      <li><strong>+ RAG data extraction cho LLM</strong></li>
+    </ul>
+  </div>
+  <div class="card purple">
+    <h3>MLOps 3 - Advanced Platform <span class="badge badge-plan">PLANNED</span></h3>
+    <p>Nâng cấp lên enterprise-grade platform với advanced serving và LLM integration.</p>
+    <ul>
+      <li>KServe + RayServe (advanced serving)</li>
+      <li>KEDA (event-driven autoscaling)</li>
+      <li>Kubeflow (ML pipeline orchestration)</li>
+      <li>Istio (traffic management)</li>
+      <li>Keycloak (authentication)</li>
+      <li>RAGFlow/Typesense (RAG pipeline)</li>
+      <li>Langfuse (LLM observability)</li>
+    </ul>
+  </div>
+</div>
+
+<h3>Kubernetes Namespaces - Unified View</h3>
+<table>
+  <tr><th>Namespace</th><th>Khoá</th><th>Components</th><th>Status</th></tr>
+  <tr><td><code>model-serving</code></td><td>MLOps 1</td><td>FastAPI Face Detection, YOLOv11</td><td><span class="badge badge-done">Done</span></td></tr>
+  <tr><td><code>nginx-ingress</code></td><td>MLOps 1</td><td>Nginx Ingress Controller</td><td><span class="badge badge-done">Done</span></td></tr>
+  <tr><td><code>monitoring</code></td><td>MLOps 1</td><td>Prometheus, Grafana</td><td><span class="badge badge-done">Done</span></td></tr>
+  <tr><td><code>logging</code></td><td>MLOps 1</td><td>ELK Stack, Jaeger</td><td><span class="badge badge-done">Done</span></td></tr>
+  <tr><td><code>storage-ns</code></td><td>MLOps 2</td><td>MinIO (Data Lake), DVC</td><td><span class="badge badge-wip">WIP</span></td></tr>
+  <tr><td><code>ingestion-ns</code></td><td>MLOps 2</td><td>Kafka, Schema Registry, Debezium</td><td><span class="badge badge-wip">WIP</span></td></tr>
+  <tr><td><code>streaming-ns</code></td><td>MLOps 2</td><td>Kafka Streams</td><td><span class="badge badge-plan">Planned</span></td></tr>
+  <tr><td><code>processing-ns</code></td><td>MLOps 2</td><td>Spark, Flink</td><td><span class="badge badge-plan">Planned</span></td></tr>
+  <tr><td><code>validation-ns</code></td><td>MLOps 2</td><td>Great Expectations</td><td><span class="badge badge-plan">Planned</span></td></tr>
+  <tr><td><code>metadata-ns</code></td><td>MLOps 2</td><td>DataHub</td><td><span class="badge badge-plan">Planned</span></td></tr>
+  <tr><td><code>orchestration-ns</code></td><td>MLOps 2</td><td>Airflow</td><td><span class="badge badge-plan">Planned</span></td></tr>
+  <tr><td><code>ml-pipeline-ns</code></td><td>MLOps 3</td><td>Kubeflow Pipelines</td><td><span class="badge badge-plan">Planned</span></td></tr>
+  <tr><td><code>serving-ns</code></td><td>MLOps 3</td><td>KServe, RayServe, KEDA</td><td><span class="badge badge-plan">Planned</span></td></tr>
+  <tr><td><code>rag-ns</code></td><td>MLOps 3</td><td>RAGFlow, Typesense, Weaviate, LLM</td><td><span class="badge badge-plan">Planned</span></td></tr>
+  <tr><td><code>auth-ns</code></td><td>MLOps 3</td><td>Keycloak, Istio</td><td><span class="badge badge-plan">Planned</span></td></tr>
+</table>
+</div>
+
+<!-- TAB 2: MLOps 1 -->
+<div id="mlops1" class="tab-content">
+<h2>MLOps 1 - Model Serving Pipeline <span class="badge badge-done">COMPLETED</span></h2>
+
+<div class="card green">
+<h3>Architecture Flow</h3>
+<div class="flow-row">
+  <div class="flow-box" style="border-color:#22c55e">User Request</div>
+  <span class="flow-arrow">→</span>
+  <div class="flow-box" style="border-color:#3b82f6">Nginx Ingress</div>
+  <span class="flow-arrow">→</span>
+  <div class="flow-box" style="border-color:#8b5cf6">FastAPI Service</div>
+  <span class="flow-arrow">→</span>
+  <div class="flow-box" style="border-color:#f59e0b">YOLOv11 Model</div>
+  <span class="flow-arrow">→</span>
+  <div class="flow-box" style="border-color:#22c55e">Detection Result</div>
+</div>
+</div>
+
+<div class="grid">
+  <div class="card blue">
+    <h3>Core Components</h3>
+    <ul>
+      <li><strong>ML Model:</strong> YOLOv11n-face (face detection)</li>
+      <li><strong>API:</strong> FastAPI with /detect/faces/image endpoint</li>
+      <li><strong>Container:</strong> Docker image pushed to DockerHub</li>
+      <li><strong>Deployment:</strong> Kubernetes Deployment + Service via Helm</li>
+    </ul>
+  </div>
+  <div class="card blue">
+    <h3>Infrastructure</h3>
+    <ul>
+      <li><strong>Cloud:</strong> Google Kubernetes Engine (GKE)</li>
+      <li><strong>IaC:</strong> Terraform (cluster) + Ansible (Jenkins GCE)</li>
+      <li><strong>CI/CD:</strong> Jenkins (build → test → push → deploy)</li>
+      <li><strong>Ingress:</strong> Nginx Ingress Controller</li>
+    </ul>
+  </div>
+  <div class="card blue">
+    <h3>Observability</h3>
+    <ul>
+      <li><strong>Metrics:</strong> Prometheus + Grafana (cluster + app metrics)</li>
+      <li><strong>Logs:</strong> ELK Stack (Elasticsearch + Logstash + Kibana + Filebeat)</li>
+      <li><strong>Tracing:</strong> Jaeger (distributed tracing)</li>
+      <li><strong>Deployment:</strong> Helmfile orchestrated</li>
+    </ul>
+  </div>
+  <div class="card blue">
+    <h3>Điểm Mạnh Đã Có</h3>
+    <ul>
+      <li>✅ Production-ready serving pipeline</li>
+      <li>✅ Full IaC (Terraform + Ansible)</li>
+      <li>✅ Automated CI/CD with Jenkins</li>
+      <li>✅ Comprehensive observability stack</li>
+      <li>✅ Helm-based deployment</li>
+    </ul>
+  </div>
+</div>
+</div>
+
+<!-- TAB 3: MLOps 2 -->
+<div id="mlops2" class="tab-content">
+<h2>MLOps 2 - Data Engineering Pipeline <span class="badge badge-wip">IN PROGRESS</span></h2>
+
+<div class="highlight">
+<h3>Data Pipeline Architecture</h3>
+<div class="mermaid-like">
+ DATA SOURCES                    INGESTION              PROCESSING           STORAGE & QUALITY
+┌──────────────┐              ┌──────────────┐       ┌──────────────┐      ┌──────────────────┐
+│ 📷 WIDER FACE │──(batch)───→│   MinIO       │──────→│  Spark       │─────→│  Data Warehouse  │
+│   Dataset     │              │  (Data Lake)  │       │  (Batch ETL) │      │  (PostgreSQL)    │
+└──────────────┘              └──────────────┘       └──────────────┘      │  Bronze→Silver→  │
+                                                                           │  Gold layers     │
+┌──────────────┐              ┌──────────────┐       ┌──────────────┐      └────────┬─────────┘
+│ 📹 Video/     │──(stream)──→│   Kafka       │──────→│  Flink/      │              │
+│   Camera Feed │              │  + Schema Reg │       │  Spark Stream│      ┌───────▼─────────┐
+└──────────────┘              └──────────────┘       └──────────────┘      │ Great Expectations│
+                                                                           │  (Validation)    │
+┌──────────────┐              ┌──────────────┐                             └───────┬──────────┘
+│ 🗄️ App DB     │──(CDC)─────→│  Debezium     │                                    │
+│  (PostgreSQL) │              │  → Kafka      │                             ┌──────▼──────────┐
+└──────────────┘              └──────────────┘                              │   DataHub        │
+                                                                            │  (Metadata &     │
+                              ┌──────────────┐                              │   Lineage)       │
+                              │  Airflow      │──── orchestrates all ──────→└──────────────────┘
+                              │ (DAG: batch,  │
+                              │  stream, train)│
+                              └──────────────┘
+</div>
+</div>
+
+<h3>Đã Hoàn Thành (AddDataFlow branch)</h3>
+<div class="grid">
+  <div class="card orange">
+    <h3>Kafka KRaft <span class="badge badge-done">Done</span></h3>
+    <ul>
+      <li>Kafka deployed via Bitnami Helm chart</li>
+      <li>SASL_PLAINTEXT authentication</li>
+      <li>Topics: face.images.metadata, face.annotations, face.detection.results</li>
+      <li>Schema Registry connected</li>
+    </ul>
+  </div>
+  <div class="card orange">
+    <h3>MinIO <span class="badge badge-done">Done</span></h3>
+    <ul>
+      <li>S3-compatible object storage</li>
+      <li>Helm deployment in storage-ns</li>
+      <li>Buckets cho raw/processed data</li>
+    </ul>
+  </div>
+  <div class="card orange">
+    <h3>Streaming Code <span class="badge badge-done">Done</span></h3>
+    <ul>
+      <li>FaceDetectionStreaming class (Python)</li>
+      <li>Send image metadata + annotations qua Kafka</li>
+      <li>Consumer cho validation pipeline</li>
+      <li>Metadata generator cho WIDER FACE dataset</li>
+    </ul>
+  </div>
+</div>
+
+<h3>Cần Làm Tiếp</h3>
+<div class="grid">
+  <div class="card red">
+    <h3>Spark/Flink Processing <span class="badge badge-plan">Planned</span></h3>
+    <p>Batch ETL từ MinIO → DW + Stream processing từ Kafka. Tham khảo NYC Taxi Pipeline (Spark + Delta Lake + DBT).</p>
+  </div>
+  <div class="card red">
+    <h3>Great Expectations <span class="badge badge-plan">Planned</span></h3>
+    <p>Validate data ở mỗi stage: raw → processed → gold. Tích hợp với Kubeflow pipeline và DataHub.</p>
+  </div>
+  <div class="card red">
+    <h3>DataHub <span class="badge badge-plan">Planned</span></h3>
+    <p>Metadata catalog + data lineage. Tích hợp với Airflow (DAG lineage), Great Expectations (assertions), và Kafka (schema).</p>
+  </div>
+  <div class="card red">
+    <h3>Airflow Orchestration <span class="badge badge-plan">Planned</span></h3>
+    <p>DAGs: data_ingestion, data_processing, data_validation, training_pipeline. Tham khảo Bùi Minh Đức's project.</p>
+  </div>
+</div>
+</div>
+
+<!-- TAB 4: MLOps 3 -->
+<div id="mlops3" class="tab-content">
+<h2>MLOps 3 - Advanced Platform <span class="badge badge-plan">PLANNED</span></h2>
+
+<div class="grid">
+  <div class="card purple">
+    <h3>KServe - Advanced Model Serving</h3>
+    <p>Thay thế/bổ sung FastAPI serving hiện tại bằng KServe:</p>
+    <ul>
+      <li><strong>InferenceService:</strong> Standard model serving protocol</li>
+      <li><strong>Kafka Integration:</strong> Consume events từ Kafka → inference → produce results</li>
+      <li><strong>Inference Graph:</strong> Chain multiple models (face detect → face recognize → metadata enrich)</li>
+      <li><strong>Canary/A-B Testing:</strong> Istio-based traffic splitting</li>
+      <li><strong>Auto-scaling:</strong> Scale to zero + KEDA event-driven scaling</li>
+    </ul>
+    <p class="small">Ref: kserve.github.io/website/latest/modelserving/kafka/kafka/</p>
+  </div>
+
+  <div class="card purple">
+    <h3>RayServe - Parallel Inference</h3>
+    <p>Chạy song song với KServe cho high-throughput scenarios:</p>
+    <ul>
+      <li><strong>Parallel inference:</strong> Multiple model replicas</li>
+      <li><strong>Dynamic batching:</strong> Batch requests for GPU efficiency</li>
+      <li><strong>Serve DAG:</strong> Complex inference graphs</li>
+      <li><strong>Ray Tune:</strong> Distributed hyperparameter tuning (tham khảo Bùi Minh Đức)</li>
+    </ul>
+  </div>
+
+  <div class="card purple">
+    <h3>KEDA - Event-Driven Autoscaling</h3>
+    <ul>
+      <li>Scale KServe pods based on Kafka queue depth</li>
+      <li>Scale Spark/Flink jobs based on data volume</li>
+      <li>Scale RAG pipeline based on request count</li>
+      <li>Custom metrics from Prometheus</li>
+    </ul>
+  </div>
+
+  <div class="card purple">
+    <h3>Kubeflow Pipelines</h3>
+    <p>ML pipeline orchestration trên Kubernetes:</p>
+    <ul>
+      <li><strong>Training Pipeline:</strong> Data prep → Validate (GE) → Train → Evaluate → Register</li>
+      <li><strong>Data Pipeline:</strong> Ingest → Transform → Validate → Store</li>
+      <li><strong>GE Component:</strong> Great Expectations validation trong pipeline</li>
+      <li><strong>MLflow Integration:</strong> Experiment tracking + model registry</li>
+    </ul>
+  </div>
+
+  <div class="card purple">
+    <h3>Istio Service Mesh</h3>
+    <ul>
+      <li>Traffic management (canary, blue-green, A/B)</li>
+      <li>mTLS between services</li>
+      <li>Circuit breaker + retry policies</li>
+      <li>Observability (Kiali dashboard)</li>
+      <li>Rate limiting per service</li>
+    </ul>
+  </div>
+
+  <div class="card purple">
+    <h3>Keycloak Authentication</h3>
+    <ul>
+      <li>SSO cho tất cả dashboards (Grafana, Airflow, MLflow, DataHub...)</li>
+      <li>API key management cho external access</li>
+      <li>Role-based access control (RBAC)</li>
+      <li>OAuth2 + OIDC integration với Istio</li>
+    </ul>
+  </div>
+</div>
+
+<h3>Iter8 - ML Model Testing</h3>
+<div class="card blue">
+  <p>Tích hợp Iter8 với KServe để A/B test và progressive delivery:</p>
+  <ul>
+    <li>SLO validation (latency, error rate)</li>
+    <li>Automated canary analysis</li>
+    <li>Traffic shifting based on metrics</li>
+  </ul>
+  <p class="small">Ref: iter8.tools/0.9/tutorials/integrations/kserve/</p>
+</div>
+</div>
+
+<!-- TAB 5: RAG -->
+<div id="rag" class="tab-content">
+<h2>RAG Pipeline cho Face Detection Data <span class="badge badge-plan">PLANNED</span></h2>
+
+<div class="highlight">
+<h3>RAG Architecture for Face Data</h3>
+<div class="mermaid-like">
+ DATA EXTRACTION                 INDEXING & STORAGE           RAG SERVING
+┌──────────────────┐           ┌──────────────────┐        ┌──────────────────┐
+│  Face Detection   │           │                  │        │                  │
+│  Results (Kafka)  │──────────→│  Embedding       │───────→│  RAG Controller  │
+│  - bbox coords    │           │  Service         │        │  (FastAPI)       │
+│  - confidence     │           │  (sentence-      │        │                  │
+│  - face count     │           │   transformers)  │        │  Query:          │
+│  - image metadata │           │                  │        │  "Tìm ảnh có    │
+└──────────────────┘           └────────┬─────────┘        │   >5 faces"     │
+                                        │                   │  "Ảnh chất lượng│
+┌──────────────────┐           ┌────────▼─────────┐        │   cao ngày 15/3"│
+│  DataHub Metadata │           │                  │        └────────┬─────────┘
+│  - data lineage   │──────────→│  Vector Store    │                 │
+│  - quality scores │           │  (Weaviate/      │        ┌────────▼─────────┐
+│  - schema info    │           │   Typesense)     │        │  LLM Inference   │
+└──────────────────┘           │                  │        │  (via KServe/    │
+                                └──────────────────┘        │   RayServe)      │
+┌──────────────────┐                                        └────────┬─────────┘
+│  WIDER FACE       │           ┌──────────────────┐                 │
+│  Annotations      │──────────→│  Document Store   │        ┌───────▼──────────┐
+│  - ground truth   │           │  (for RAGFlow)    │        │  Guardrails      │
+│  - categories     │           │                  │        │  (input/output   │
+└──────────────────┘           └──────────────────┘        │   validation)    │
+                                                            └──────────────────┘
+</div>
+</div>
+
+<h3>Các Tool RAG và Vai Trò</h3>
+<div class="grid">
+  <div class="card pink">
+    <h3>RAGFlow</h3>
+    <p>Open-source RAG engine với deep document understanding:</p>
+    <ul>
+      <li>Document parsing (PDF, images, structured data)</li>
+      <li>Intelligent chunking với multiple templates</li>
+      <li>Visual chunking cho face detection reports</li>
+      <li>Built-in evaluation pipeline</li>
+      <li>Có thể dùng như main RAG orchestrator</li>
+    </ul>
+  </div>
+  <div class="card pink">
+    <h3>Typesense</h3>
+    <p>Search engine cho metadata face detection:</p>
+    <ul>
+      <li>Instant search trên metadata (filename, category, face count)</li>
+      <li>Typo-tolerant search</li>
+      <li>Faceted search (filter by date, quality, category)</li>
+      <li>Built-in Natural Language Search (v29+)</li>
+      <li>Microservice riêng, serve nhiều nơi (UI, RAG, API)</li>
+    </ul>
+  </div>
+  <div class="card pink">
+    <h3>Weaviate</h3>
+    <p>Vector database cho semantic search:</p>
+    <ul>
+      <li>Store face embeddings + metadata</li>
+      <li>Hybrid search (vector + keyword)</li>
+      <li>Multi-tenant support</li>
+      <li>Tham khảo: deploy-highly-scalable-RAG (Nguyễn Trần Đăng Dương)</li>
+    </ul>
+  </div>
+  <div class="card pink">
+    <h3>Langfuse</h3>
+    <p>LLM observability platform:</p>
+    <ul>
+      <li>Trace LLM calls (latency, tokens, cost)</li>
+      <li>Evaluate RAG quality (faithfulness, relevancy)</li>
+      <li>Tích hợp với existing monitoring stack</li>
+      <li>Tham khảo: ChatOpsLLM (Bùi Minh Đức)</li>
+    </ul>
+  </div>
+</div>
+
+<h3>Use Cases Cụ Thể cho Face Detection RAG</h3>
+<div class="card blue">
+<ul>
+  <li><strong>Semantic Search:</strong> "Tìm tất cả ảnh có nhiều hơn 5 khuôn mặt trong điều kiện ánh sáng yếu"</li>
+  <li><strong>Data Quality QA:</strong> "Những batch data nào có tỷ lệ validation fail cao nhất?"</li>
+  <li><strong>Pipeline Debug:</strong> "Tại sao accuracy giảm ở batch ngày 15/3? Có thay đổi gì ở data source không?"</li>
+  <li><strong>Report Generation:</strong> "Tóm tắt kết quả detection của tuần này so với tuần trước"</li>
+  <li><strong>Metadata Exploration:</strong> "Dataset có bao nhiêu categories? Phân bố face count theo category?"</li>
+</ul>
+</div>
+</div>
+
+<!-- TAB 6: SO SÁNH -->
+<div id="compare" class="tab-content">
+<h2>So Sánh Với Top Projects trên Hall of Fame</h2>
+
+<table>
+  <tr>
+    <th>Component</th>
+    <th>Bùi Minh Đức (241⭐)<br><small>Purchase Prediction</small></th>
+    <th>Trần Nhật Nguyên (139⭐)<br><small>NYC Taxi</small></th>
+    <th>Bùi Minh Đức (131⭐)<br><small>LLMOps</small></th>
+    <th>Đăng Dương (69⭐)<br><small>Scalable RAG</small></th>
+    <th style="background:#1e3a5f">Hoàng Đức Long<br><small>Face Detection (MLOps Full)</small></th>
+  </tr>
+  <tr>
+    <td><strong>ML Model</strong></td>
+    <td>Purchase Prediction (XGBoost)</td>
+    <td>N/A (DE project)</td>
+    <td>LLM (Open WebUI + LiteLLM)</td>
+    <td>RAG (Embedding + LLM)</td>
+    <td style="background:#1e3a5f">YOLOv11 + LLM/RAG</td>
+  </tr>
+  <tr>
+    <td><strong>Data Pipeline</strong></td>
+    <td>Kafka + Debezium + Flink + Spark</td>
+    <td>Kafka + Debezium + Spark + Delta Lake</td>
+    <td>N/A</td>
+    <td>N/A</td>
+    <td style="background:#1e3a5f">Kafka + Debezium + Spark + Flink</td>
+  </tr>
+  <tr>
+    <td><strong>Data Validation</strong></td>
+    <td>Flink Schema Validation</td>
+    <td>Great Expectations</td>
+    <td>N/A</td>
+    <td>N/A</td>
+    <td style="background:#1e3a5f">Great Expectations + Kubeflow</td>
+  </tr>
+  <tr>
+    <td><strong>Metadata</strong></td>
+    <td>N/A</td>
+    <td>N/A</td>
+    <td>N/A</td>
+    <td>N/A</td>
+    <td style="background:#1e3a5f"><strong>DataHub</strong> (unique!)</td>
+  </tr>
+  <tr>
+    <td><strong>Training</strong></td>
+    <td>Ray Tune + MLflow</td>
+    <td>N/A</td>
+    <td>N/A</td>
+    <td>N/A</td>
+    <td style="background:#1e3a5f">Kubeflow + MLflow + DVC</td>
+  </tr>
+  <tr>
+    <td><strong>Serving</strong></td>
+    <td>Ray Serve + FastAPI</td>
+    <td>N/A</td>
+    <td>LiteLLM + Open WebUI</td>
+    <td>FastAPI + GKE Autoscaling</td>
+    <td style="background:#1e3a5f">KServe + RayServe + KEDA</td>
+  </tr>
+  <tr>
+    <td><strong>RAG/LLM</strong></td>
+    <td>N/A</td>
+    <td>N/A</td>
+    <td>Open WebUI + Langfuse</td>
+    <td>Weaviate + Embedding + LLM</td>
+    <td style="background:#1e3a5f">RAGFlow + Typesense + Weaviate</td>
+  </tr>
+  <tr>
+    <td><strong>Storage</strong></td>
+    <td>MinIO + PostgreSQL + Redis</td>
+    <td>MinIO + PostgreSQL + Trino</td>
+    <td>N/A</td>
+    <td>Weaviate</td>
+    <td style="background:#1e3a5f">MinIO + PostgreSQL + Weaviate</td>
+  </tr>
+  <tr>
+    <td><strong>Orchestration</strong></td>
+    <td>Airflow</td>
+    <td>Airflow</td>
+    <td>N/A</td>
+    <td>N/A</td>
+    <td style="background:#1e3a5f">Airflow + Kubeflow</td>
+  </tr>
+  <tr>
+    <td><strong>CI/CD</strong></td>
+    <td>N/A (Docker Compose)</td>
+    <td>N/A (Docker Compose)</td>
+    <td>Jenkins + Ansible</td>
+    <td>Jenkins</td>
+    <td style="background:#1e3a5f">Jenkins + Ansible + Terraform</td>
+  </tr>
+  <tr>
+    <td><strong>Monitoring</strong></td>
+    <td>SigNoz + Prometheus + Grafana</td>
+    <td>N/A</td>
+    <td>Prometheus + Grafana + ELK</td>
+    <td>Prometheus + Grafana</td>
+    <td style="background:#1e3a5f">Prometheus + Grafana + ELK + Jaeger + Langfuse</td>
+  </tr>
+  <tr>
+    <td><strong>Security</strong></td>
+    <td>NGINX Proxy Manager</td>
+    <td>N/A</td>
+    <td>NGINX + Cast AI</td>
+    <td>NVIDIA NIM API redirect</td>
+    <td style="background:#1e3a5f"><strong>Keycloak + Istio</strong> (unique!)</td>
+  </tr>
+  <tr>
+    <td><strong>Infra</strong></td>
+    <td>Docker Compose only</td>
+    <td>Docker Compose only</td>
+    <td>Terraform + Ansible + GKE</td>
+    <td>Terraform + GKE</td>
+    <td style="background:#1e3a5f">Terraform + Ansible + GKE</td>
+  </tr>
+</table>
+
+<div class="highlight">
+<h3>Điểm Khác Biệt Nổi Bật Của Bạn</h3>
+<ul>
+  <li><strong>Unique: DataHub Metadata Platform</strong> - Không đồ án nào khác có metadata catalog + lineage tracking</li>
+  <li><strong>Unique: Keycloak + Istio Security</strong> - Enterprise-grade auth & service mesh, chưa ai làm</li>
+  <li><strong>Full Stack Coverage:</strong> Duy nhất kết hợp Data Pipeline + ML Training + Model Serving + RAG/LLM trong 1 project</li>
+  <li><strong>Kubeflow + Great Expectations:</strong> Data validation trực tiếp trong ML pipeline, tham khảo từ research papers</li>
+  <li><strong>KServe + Kafka:</strong> Event-driven inference pipeline, không chỉ REST API</li>
+</ul>
+</div>
+</div>
+
+<!-- TAB 7: ROADMAP -->
+<div id="roadmap" class="tab-content">
+<h2>Roadmap Đề Xuất</h2>
+
+<h3>Phase 1: Hoàn Thiện Data Pipeline (MLOps 2 - Core)</h3>
+<div class="card orange">
+<table>
+  <tr><th>#</th><th>Task</th><th>Tools</th><th>Ưu tiên</th></tr>
+  <tr><td>1.1</td><td>Hoàn thiện batch pipeline: MinIO → Spark → DW (Bronze→Silver→Gold)</td><td>Spark, MinIO, PostgreSQL</td><td><span class="badge badge-red">P0</span></td></tr>
+  <tr><td>1.2</td><td>Stream pipeline: Kafka → Flink/Spark Streaming → Online Store</td><td>Kafka, Flink, Redis</td><td><span class="badge badge-red">P0</span></td></tr>
+  <tr><td>1.3</td><td>Great Expectations: validation ở mỗi layer (raw, silver, gold)</td><td>Great Expectations</td><td><span class="badge badge-red">P0</span></td></tr>
+  <tr><td>1.4</td><td>Airflow DAGs: data_pipeline + training_pipeline</td><td>Airflow</td><td><span class="badge badge-red">P0</span></td></tr>
+  <tr><td>1.5</td><td>DataHub: deploy + integrate với Airflow, GE, Kafka</td><td>DataHub</td><td><span class="badge badge-orange">P1</span></td></tr>
+  <tr><td>1.6</td><td>DVC: data versioning cho training datasets</td><td>DVC, MinIO</td><td><span class="badge badge-orange">P1</span></td></tr>
+  <tr><td>1.7</td><td>Giả lập data sources (video, images) cho demo</td><td>Python scripts</td><td><span class="badge badge-orange">P1</span></td></tr>
+</table>
+</div>
+
+<h3>Phase 2: Advanced Serving & ML Platform (MLOps 3 - Core)</h3>
+<div class="card purple">
+<table>
+  <tr><th>#</th><th>Task</th><th>Tools</th><th>Ưu tiên</th></tr>
+  <tr><td>2.1</td><td>KServe: deploy InferenceService cho face detection model</td><td>KServe</td><td><span class="badge badge-red">P0</span></td></tr>
+  <tr><td>2.2</td><td>KServe + Kafka: event-driven inference từ streaming data</td><td>KServe, Kafka</td><td><span class="badge badge-red">P0</span></td></tr>
+  <tr><td>2.3</td><td>KEDA: autoscale serving pods based on Kafka lag</td><td>KEDA</td><td><span class="badge badge-orange">P1</span></td></tr>
+  <tr><td>2.4</td><td>RayServe: parallel inference + dynamic batching</td><td>RayServe</td><td><span class="badge badge-orange">P1</span></td></tr>
+  <tr><td>2.5</td><td>Kubeflow Pipelines: training pipeline với GE validation</td><td>Kubeflow, GE</td><td><span class="badge badge-orange">P1</span></td></tr>
+  <tr><td>2.6</td><td>MLflow: experiment tracking + model registry</td><td>MLflow</td><td><span class="badge badge-orange">P1</span></td></tr>
+  <tr><td>2.7</td><td>Istio: traffic management + canary deployment</td><td>Istio</td><td><span class="badge badge-blue">P2</span></td></tr>
+  <tr><td>2.8</td><td>Iter8: A/B testing cho model versions</td><td>Iter8, KServe</td><td><span class="badge badge-blue">P2</span></td></tr>
+</table>
+</div>
+
+<h3>Phase 3: RAG/LLM Integration + Security</h3>
+<div class="card pink">
+<table>
+  <tr><th>#</th><th>Task</th><th>Tools</th><th>Ưu tiên</th></tr>
+  <tr><td>3.1</td><td>RAGFlow: deploy + connect tới face detection data</td><td>RAGFlow</td><td><span class="badge badge-red">P0</span></td></tr>
+  <tr><td>3.2</td><td>Typesense: search engine cho face metadata</td><td>Typesense</td><td><span class="badge badge-red">P0</span></td></tr>
+  <tr><td>3.3</td><td>Weaviate: vector store cho face embeddings</td><td>Weaviate</td><td><span class="badge badge-orange">P1</span></td></tr>
+  <tr><td>3.4</td><td>LLM Inference: deploy via KServe/RayServe</td><td>KServe, vLLM</td><td><span class="badge badge-orange">P1</span></td></tr>
+  <tr><td>3.5</td><td>Langfuse: LLM observability + RAG evaluation</td><td>Langfuse</td><td><span class="badge badge-orange">P1</span></td></tr>
+  <tr><td>3.6</td><td>Guardrails: input/output validation cho RAG</td><td>Guardrails AI</td><td><span class="badge badge-blue">P2</span></td></tr>
+  <tr><td>3.7</td><td>Keycloak: SSO + RBAC cho toàn bộ dashboards</td><td>Keycloak</td><td><span class="badge badge-blue">P2</span></td></tr>
+  <tr><td>3.8</td><td>RAG data pipeline: Kafka → embed → Weaviate (streaming)</td><td>Kafka, Embedding service</td><td><span class="badge badge-orange">P1</span></td></tr>
+</table>
+</div>
+
+<h3>Ý Tưởng Microservices Shared</h3>
+<div class="card blue">
+<p>Các tool có thể dùng chung (microservice pattern) cho nhiều pipeline:</p>
+<ul>
+  <li><strong>Kafka:</strong> Message bus cho cả data pipeline, ML inference events, và RAG indexing</li>
+  <li><strong>MinIO:</strong> Object storage cho raw data, model artifacts, và RAG documents</li>
+  <li><strong>Great Expectations:</strong> Validate data ở data pipeline + validate model input ở serving + validate RAG chunks</li>
+  <li><strong>DataHub:</strong> Metadata cho data pipeline lineage + model metadata + RAG document catalog</li>
+  <li><strong>Prometheus + Grafana:</strong> Unified monitoring cho tất cả services</li>
+  <li><strong>Keycloak:</strong> Single auth provider cho tất cả UI dashboards</li>
+  <li><strong>KServe:</strong> Serve cả face detection model lẫn LLM/embedding model</li>
+</ul>
+</div>
+</div>
+
+</div>
+
+<script>
+function showTab(id) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>
