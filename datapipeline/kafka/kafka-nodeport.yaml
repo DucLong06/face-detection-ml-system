@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-external
+  namespace: ingestion-ns
+spec:
+  type: NodePort
+  ports:
+  - port: 9092
+    targetPort: 9092
+    nodePort: 30092
+  selector:
+    app.kubernetes.io/name: kafka
+    app.kubernetes.io/component: controller
