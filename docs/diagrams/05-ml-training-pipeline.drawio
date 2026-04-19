@@ -1,0 +1,121 @@
+<mxfile host="app.diagrams.net" agent="Claude" type="device" compressed="false" version="22.1.0">
+  <diagram id="d05" name="ML Training Pipeline">
+    <mxGraphModel dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1920" pageHeight="1080" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="Face Detection MLOps — ML Training Pipeline (Kubeflow + MLflow + Katib)" style="text;html=1;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="1840" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="storage-in" value="storage-ns" style="swimlane;fontSize=14;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontStyle=1;startSize=28;" vertex="1" parent="1">
+          <mxGeometry x="60" y="100" width="260" height="880" as="geometry" />
+        </mxCell>
+        <mxCell id="pg-dw" value="PostgreSQL DW&#xa;fact_detections&#xa;dim_images" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="storage-in">
+          <mxGeometry x="30" y="80" width="200" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="minio-gold" value="MinIO Gold&#xa;s3://gold/training/&#xa;(features +&#xa;labels)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="storage-in">
+          <mxGeometry x="30" y="240" width="200" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="dvc" value="DVC&#xa;(dataset version pin)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="storage-in">
+          <mxGeometry x="30" y="420" width="200" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="ml-ns" value="ml-pipeline-ns" style="swimlane;fontSize=14;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontStyle=1;startSize=28;" vertex="1" parent="1">
+          <mxGeometry x="380" y="100" width="800" height="880" as="geometry" />
+        </mxCell>
+        <mxCell id="kf-nb" value="Kubeflow Notebook&#xa;(EDA + prototyping)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="ml-ns">
+          <mxGeometry x="40" y="80" width="220" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="kf-pipeline" value="Kubeflow Pipeline DAG" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=13;fontStyle=1;verticalAlign=top;" vertex="1" parent="ml-ns">
+          <mxGeometry x="40" y="200" width="720" height="340" as="geometry" />
+        </mxCell>
+        <mxCell id="step1" value="Step 1&#xa;data-load&#xa;(from MinIO Gold)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontSize=10;" vertex="1" parent="kf-pipeline">
+          <mxGeometry x="20" y="50" width="150" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="step2" value="Step 2&#xa;preprocess&#xa;(augment, split)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontSize=10;" vertex="1" parent="kf-pipeline">
+          <mxGeometry x="200" y="50" width="150" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="step3" value="Step 3&#xa;train&#xa;YOLOv11" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontSize=10;" vertex="1" parent="kf-pipeline">
+          <mxGeometry x="380" y="50" width="150" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="step4" value="Step 4&#xa;evaluate&#xa;(mAP, FPR)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontSize=10;" vertex="1" parent="kf-pipeline">
+          <mxGeometry x="560" y="50" width="150" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="step5" value="Step 5&#xa;register candidate&#xa;(MLflow)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontSize=10;" vertex="1" parent="kf-pipeline">
+          <mxGeometry x="200" y="180" width="150" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="step6" value="Step 6&#xa;export ONNX +&#xa;TensorRT INT8" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontSize=10;" vertex="1" parent="kf-pipeline">
+          <mxGeometry x="380" y="180" width="150" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="step7" value="Step 7&#xa;deploy canary&#xa;(KServe)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontSize=10;" vertex="1" parent="kf-pipeline">
+          <mxGeometry x="560" y="180" width="150" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="katib" value="Katib + RayTune&#xa;(HPO parallel trials)&#xa;• lr, batch, aug&#xa;• maxTrial=10&#xa;• best→ step 3" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="ml-ns">
+          <mxGeometry x="40" y="600" width="280" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="mlflow" value="MLflow Tracking Server&#xa;• experiments&#xa;• params / metrics&#xa;• artifacts (weights, plots)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="ml-ns">
+          <mxGeometry x="360" y="600" width="280" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="registry" value="MLflow Model Registry&#xa;Stages:&#xa;None → Staging → Production → Archived" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="ml-ns">
+          <mxGeometry x="40" y="780" width="600" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="storage-out" value="storage-ns (outputs)" style="swimlane;fontSize=14;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontStyle=1;startSize=28;" vertex="1" parent="1">
+          <mxGeometry x="1240" y="100" width="260" height="540" as="geometry" />
+        </mxCell>
+        <mxCell id="minio-models" value="MinIO&#xa;s3://models/yolov11/&#xa;.pt + .onnx + .engine" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="storage-out">
+          <mxGeometry x="30" y="80" width="200" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="minio-exp" value="MinIO&#xa;s3://mlflow/experiments/" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="storage-out">
+          <mxGeometry x="30" y="260" width="200" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="serve-ref" value="serving-ns&#xa;KServe InferenceService" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1560" y="460" width="280" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" value="Load features" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="minio-gold" target="step1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="Version pin" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;dashed=1;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="dvc" target="step1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;" edge="1" parent="kf-pipeline" source="step1" target="step2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;" edge="1" parent="kf-pipeline" source="step2" target="step3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;" edge="1" parent="kf-pipeline" source="step3" target="step4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;" edge="1" parent="kf-pipeline" source="step4" target="step5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;" edge="1" parent="kf-pipeline" source="step5" target="step6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;" edge="1" parent="kf-pipeline" source="step6" target="step7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" value="Best hparams" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;dashed=1;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="katib" target="step3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" value="Log metrics" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;dashed=1;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="step3" target="mlflow">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" value="Register model" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="step5" target="registry">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" value="Store weights" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="step6" target="minio-models">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e13" value="Store artifacts" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;dashed=1;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="mlflow" target="minio-exp">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e14" value="Canary deploy" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="step7" target="serve-ref">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="footer" value="v0.1 | 2026-04-19 | longhd" style="text;html=1;align=right;verticalAlign=middle;fontSize=10;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1040" width="1840" height="20" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

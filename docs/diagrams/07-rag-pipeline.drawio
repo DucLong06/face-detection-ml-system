@@ -1,0 +1,73 @@
+<mxfile host="app.diagrams.net" agent="Claude" type="device" compressed="false" version="22.1.0">
+  <diagram id="d07" name="RAG Pipeline">
+    <mxGraphModel dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1920" pageHeight="1080" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="Face Detection MLOps — RAG Pipeline (Ollama + Weaviate + LangChain)" style="text;html=1;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="1840" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="user" value="Data Analyst /&#xa;ML Engineer" style="shape=actor;html=1;strokeColor=#000000;fillColor=#FFFFFF;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="80" y="460" width="60" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="rag-ns" value="rag-ns" style="swimlane;fontSize=14;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontStyle=1;startSize=28;" vertex="1" parent="1">
+          <mxGeometry x="220" y="100" width="1280" height="880" as="geometry" />
+        </mxCell>
+        <mxCell id="api" value="FastAPI RAG endpoint&#xa;POST /ask" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="rag-ns">
+          <mxGeometry x="40" y="380" width="180" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="embed" value="Embedding model&#xa;all-MiniLM-L6-v2&#xa;(sentence-transformers)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="rag-ns">
+          <mxGeometry x="280" y="380" width="200" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="weaviate" value="Weaviate&#xa;(vector DB)&#xa;Collections:&#xa;• detection_reports&#xa;• model_docs&#xa;• runbooks" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="rag-ns">
+          <mxGeometry x="540" y="340" width="200" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="langchain" value="LangChain&#xa;(prompt composer)&#xa;template + context" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="rag-ns">
+          <mxGeometry x="800" y="380" width="200" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="ollama" value="Ollama&#xa;TinyLlama 1.1B&#xa;(CPU inference)&#xa;~5 tok/sec" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="rag-ns">
+          <mxGeometry x="1060" y="340" width="200" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="langfuse" value="Langfuse&#xa;(LLM observability&#xa;trace every step)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;fontSize=11;" vertex="1" parent="rag-ns">
+          <mxGeometry x="540" y="660" width="440" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="minio-docs" value="storage-ns&#xa;MinIO&#xa;s3://docs/reports/&#xa;(source KB)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1560" y="300" width="260" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="ingest" value="Document ingestion&#xa;(Airflow DAG)&#xa;chunk + embed + upsert" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontSize=11;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="1560" y="500" width="260" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" value="1. Query" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="user" target="api">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="2. Embed query" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="api" target="embed">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" value="3. Vector search&#xa;top-K" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="embed" target="weaviate">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" value="4. Retrieve chunks" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="weaviate" target="langchain">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" value="5. Generate" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="langchain" target="ollama">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" value="6. Response" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="ollama" target="api">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" value="Trace each step" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;dashed=1;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="langchain" target="langfuse">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" value="Read source docs" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;dashed=1;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="ingest" target="minio-docs">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" value="Upsert embeddings" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;dashed=1;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="ingest" target="weaviate">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="footer" value="v0.1 | 2026-04-19 | longhd" style="text;html=1;align=right;verticalAlign=middle;fontSize=10;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1040" width="1840" height="20" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

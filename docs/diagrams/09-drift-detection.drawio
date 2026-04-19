@@ -1,0 +1,97 @@
+<mxfile host="app.diagrams.net" agent="Claude" type="device" compressed="false" version="22.1.0">
+  <diagram id="d09" name="Drift Detection">
+    <mxGraphModel dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1920" pageHeight="1080" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="Face Detection MLOps — Drift Detection (Evidently AI + retrain feedback loop)" style="text;html=1;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="1840" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="storage-ns" value="storage-ns" style="swimlane;fontSize=14;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontStyle=1;startSize=28;" vertex="1" parent="1">
+          <mxGeometry x="80" y="100" width="280" height="600" as="geometry" />
+        </mxCell>
+        <mxCell id="pg-dw" value="PostgreSQL DW&#xa;feature_image_stats&#xa;(reference + current)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="storage-ns">
+          <mxGeometry x="30" y="100" width="220" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="minio-ref" value="MinIO&#xa;s3://gold/reference/&#xa;(training snapshot)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="storage-ns">
+          <mxGeometry x="30" y="300" width="220" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="orch-ns" value="orchestration-ns" style="swimlane;fontSize=14;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontStyle=1;startSize=28;" vertex="1" parent="1">
+          <mxGeometry x="420" y="100" width="320" height="880" as="geometry" />
+        </mxCell>
+        <mxCell id="airflow-drift" value="Airflow DAG&#xa;drift_check_daily&#xa;• schedule: 04:00&#xa;• KubernetesExecutor" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="orch-ns">
+          <mxGeometry x="40" y="80" width="240" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="airflow-retrain" value="Airflow DAG&#xa;retrain_pipeline&#xa;(conditional trigger)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="orch-ns">
+          <mxGeometry x="40" y="580" width="240" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="mon-ns" value="monitoring-ns" style="swimlane;fontSize=14;html=1;fillColor=#D5E8D4;strokeColor=#82B366;fontStyle=1;startSize=28;" vertex="1" parent="1">
+          <mxGeometry x="800" y="100" width="380" height="880" as="geometry" />
+        </mxCell>
+        <mxCell id="evidently" value="Evidently AI&#xa;Drift calculator&#xa;• PSI&#xa;• KS-test&#xa;• Wasserstein&#xa;• Embeddings drift" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="mon-ns">
+          <mxGeometry x="40" y="80" width="300" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="prom" value="Prometheus&#xa;metrics:&#xa;drift_score{feature=..}&#xa;drift_alert{severity=..}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="mon-ns">
+          <mxGeometry x="40" y="320" width="300" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="grafana" value="Grafana dashboard&#xa;Drift time-series" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="mon-ns">
+          <mxGeometry x="40" y="520" width="300" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="alertmgr" value="Alertmanager&#xa;(threshold: PSI &gt; 0.2)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="mon-ns">
+          <mxGeometry x="40" y="660" width="300" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="ext" value="External" style="swimlane;fontSize=14;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontStyle=1;startSize=28;" vertex="1" parent="1">
+          <mxGeometry x="1240" y="100" width="280" height="400" as="geometry" />
+        </mxCell>
+        <mxCell id="slack" value="Slack webhook&#xa;#mlops-alerts" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="ext">
+          <mxGeometry x="30" y="80" width="220" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="pager" value="PagerDuty&#xa;(critical drift)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="ext">
+          <mxGeometry x="30" y="220" width="220" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="ml-ref" value="ml-pipeline-ns&#xa;Kubeflow Pipeline&#xa;(retrain DAG step 5)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1240" y="600" width="280" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="serve-ref" value="serving-ns&#xa;KServe&#xa;canary new model" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1560" y="600" width="280" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" value="Read current features" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="airflow-drift" target="pg-dw">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="Load reference" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="airflow-drift" target="minio-ref">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" value="Compute drift" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="airflow-drift" target="evidently">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" value="Export metrics" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="evidently" target="prom">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" value="Scrape + visualize" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="prom" target="grafana">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" value="Eval rules" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="prom" target="alertmgr">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" value="Notify warn" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="alertmgr" target="slack">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" value="Notify critical" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="alertmgr" target="pager">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" value="Trigger retrain DAG" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;dashed=1;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="alertmgr" target="airflow-retrain">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" value="Kick Kubeflow" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="airflow-retrain" target="ml-ref">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" value="Deploy canary" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="ml-ref" target="serve-ref">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="footer" value="v0.1 | 2026-04-19 | longhd" style="text;html=1;align=right;verticalAlign=middle;fontSize=10;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1040" width="1840" height="20" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
