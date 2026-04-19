@@ -1,0 +1,85 @@
+<mxfile host="app.diagrams.net" agent="Claude" type="device" compressed="false" version="22.1.0">
+  <diagram id="d03" name="Stream Data Flow">
+    <mxGraphModel dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1920" pageHeight="1080" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="Face Detection MLOps — Stream Data Flow (Kafka + Flink real-time)" style="text;html=1;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="1840" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="producer" value="Camera /&#xa;API Producer" style="shape=actor;html=1;strokeColor=#000000;fillColor=#FFFFFF;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="80" y="460" width="60" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="ing-ns" value="ingestion-ns" style="swimlane;fontSize=14;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontStyle=1;startSize=28;" vertex="1" parent="1">
+          <mxGeometry x="260" y="100" width="320" height="880" as="geometry" />
+        </mxCell>
+        <mxCell id="kafka" value="Kafka KRaft&#xa;topic:&#xa;face-detection.raw-images&#xa;(metadata only)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="ing-ns">
+          <mxGeometry x="60" y="100" width="200" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="schema" value="Schema Registry&#xa;(Avro/Protobuf)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="ing-ns">
+          <mxGeometry x="60" y="290" width="200" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="kafka-out" value="Kafka topic:&#xa;face-detection.validated-images&#xa;+ inference-results" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="ing-ns">
+          <mxGeometry x="60" y="600" width="200" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="stream-ns" value="streaming-ns" style="swimlane;fontSize=14;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontStyle=1;startSize=28;" vertex="1" parent="1">
+          <mxGeometry x="660" y="100" width="320" height="880" as="geometry" />
+        </mxCell>
+        <mxCell id="flink-jm" value="Flink JobManager" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="stream-ns">
+          <mxGeometry x="60" y="80" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="flink-tm" value="Flink TaskManager&#xa;• Validate schema&#xa;• Enrich metadata&#xa;• Detect late arrivals&#xa;• Exactly-once" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="stream-ns">
+          <mxGeometry x="60" y="180" width="200" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="flink-ckpt" value="Flink checkpoint&#xa;state store&#xa;→ MinIO" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="stream-ns">
+          <mxGeometry x="60" y="400" width="200" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="storage-ns" value="storage-ns" style="swimlane;fontSize=14;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontStyle=1;startSize=28;" vertex="1" parent="1">
+          <mxGeometry x="1060" y="100" width="320" height="880" as="geometry" />
+        </mxCell>
+        <mxCell id="minio-raw" value="MinIO&#xa;s3://raw/camera-feed/" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="storage-ns">
+          <mxGeometry x="60" y="100" width="200" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="redis" value="Redis&#xa;(feature cache&#xa;hot features)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="storage-ns">
+          <mxGeometry x="60" y="400" width="200" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="minio-state" value="MinIO&#xa;s3://checkpoints/flink/" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="storage-ns">
+          <mxGeometry x="60" y="600" width="200" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="serve-ns" value="serving-ns" style="swimlane;fontSize=14;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontStyle=1;startSize=28;" vertex="1" parent="1">
+          <mxGeometry x="1460" y="380" width="320" height="320" as="geometry" />
+        </mxCell>
+        <mxCell id="kserve" value="KServe InferenceService&#xa;(consume results)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="serve-ns">
+          <mxGeometry x="40" y="60" width="240" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" value="1. Upload image" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="producer" target="minio-raw">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="2. Publish metadata" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="producer" target="kafka">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" value="3. Consume" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="kafka" target="flink-tm">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" value="Validate schema" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;dashed=1;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="flink-tm" target="schema">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" value="4. Cache features" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="flink-tm" target="redis">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" value="5. Publish results" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="flink-tm" target="kafka-out">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" value="Checkpoint" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;dashed=1;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="flink-ckpt" target="minio-state">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" value="6. Downstream inference" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="kafka-out" target="kserve">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="footer" value="v0.1 | 2026-04-19 | longhd" style="text;html=1;align=right;verticalAlign=middle;fontSize=10;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1040" width="1840" height="20" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

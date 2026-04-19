@@ -1,0 +1,82 @@
+<mxfile host="app.diagrams.net" agent="Claude" type="device" compressed="false" version="22.1.0">
+  <diagram id="d04" name="CDC Data Flow">
+    <mxGraphModel dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1920" pageHeight="1080" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="Face Detection MLOps — CDC Data Flow (Debezium from PostgreSQL)" style="text;html=1;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="1840" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="app-ns" value="app-ns (OLTP)" style="swimlane;fontSize=14;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontStyle=1;startSize=28;" vertex="1" parent="1">
+          <mxGeometry x="80" y="100" width="300" height="500" as="geometry" />
+        </mxCell>
+        <mxCell id="app-pg" value="PostgreSQL (app)&#xa;wal_level=logical&#xa;tables: users,&#xa;uploads, detections" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="app-ns">
+          <mxGeometry x="40" y="100" width="220" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="wal" value="WAL log&#xa;(replication slot)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;dashed=1;" vertex="1" parent="app-ns">
+          <mxGeometry x="40" y="320" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="ing-ns" value="ingestion-ns" style="swimlane;fontSize=14;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontStyle=1;startSize=28;" vertex="1" parent="1">
+          <mxGeometry x="460" y="100" width="320" height="880" as="geometry" />
+        </mxCell>
+        <mxCell id="debezium" value="Debezium Connect&#xa;PostgresConnector&#xa;(WAL reader)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="ing-ns">
+          <mxGeometry x="40" y="80" width="240" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="kafka-cdc" value="Kafka topics:&#xa;face-detection.cdc.postgres.users&#xa;face-detection.cdc.postgres.uploads&#xa;face-detection.cdc.postgres.detections" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="ing-ns">
+          <mxGeometry x="40" y="280" width="240" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="schema" value="Schema Registry&#xa;(CDC envelope&#xa;before/after)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="ing-ns">
+          <mxGeometry x="40" y="500" width="240" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="proc-ns" value="processing-ns" style="swimlane;fontSize=14;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontStyle=1;startSize=28;" vertex="1" parent="1">
+          <mxGeometry x="860" y="100" width="320" height="880" as="geometry" />
+        </mxCell>
+        <mxCell id="spark-cdc" value="Spark Streaming&#xa;• Parse CDC events&#xa;• Apply upserts&#xa;• Append to silver" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="proc-ns">
+          <mxGeometry x="40" y="80" width="240" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="flink-cdc" value="Flink SQL&#xa;(alternative)&#xa;streaming upsert" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;dashed=1;" vertex="1" parent="proc-ns">
+          <mxGeometry x="40" y="280" width="240" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="storage-ns" value="storage-ns" style="swimlane;fontSize=14;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontStyle=1;startSize=28;" vertex="1" parent="1">
+          <mxGeometry x="1260" y="100" width="320" height="880" as="geometry" />
+        </mxCell>
+        <mxCell id="minio-silver" value="MinIO Silver&#xa;s3://processed/cdc/&#xa;(append-only log)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="storage-ns">
+          <mxGeometry x="40" y="80" width="240" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="pg-dw" value="PostgreSQL DW&#xa;(dim tables upsert&#xa;via merge)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="storage-ns">
+          <mxGeometry x="40" y="280" width="240" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="datahub-ref" value="DataHub&#xa;(metadata-ns)&#xa;lineage auto" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;fontSize=11;" vertex="1" parent="storage-ns">
+          <mxGeometry x="40" y="500" width="240" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" value="WAL log" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="app-pg" target="wal">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="1. Tail WAL" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="wal" target="debezium">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" value="2. Publish CDC" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="debezium" target="kafka-cdc">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" value="Register schema" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;dashed=1;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="debezium" target="schema">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" value="3. Consume" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="kafka-cdc" target="spark-cdc">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" value="4. Append silver" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="spark-cdc" target="minio-silver">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" value="5. Upsert DW" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="spark-cdc" target="pg-dw">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" value="Lineage" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;dashed=1;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="pg-dw" target="datahub-ref">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="footer" value="v0.1 | 2026-04-19 | longhd" style="text;html=1;align=right;verticalAlign=middle;fontSize=10;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1040" width="1840" height="20" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

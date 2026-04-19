@@ -1,0 +1,94 @@
+<mxfile host="app.diagrams.net" agent="Claude" type="device" compressed="false" version="22.1.0">
+  <diagram id="d02" name="Batch Data Flow">
+    <mxGraphModel dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1920" pageHeight="1080" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="Face Detection MLOps — Batch Data Flow (Bronze → Silver → Gold)" style="text;html=1;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="1840" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="src-box" value="WIDER FACE&#xa;Dataset&#xa;(32k images)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="80" y="480" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="storage-ns" value="storage-ns" style="swimlane;fontSize=14;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontStyle=1;startSize=28;" vertex="1" parent="1">
+          <mxGeometry x="260" y="100" width="280" height="880" as="geometry" />
+        </mxCell>
+        <mxCell id="minio-bronze" value="MinIO&#xa;Bronze&#xa;s3://raw/" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="storage-ns">
+          <mxGeometry x="80" y="80" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="minio-silver" value="MinIO&#xa;Silver&#xa;s3://processed/" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="storage-ns">
+          <mxGeometry x="80" y="250" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="minio-gold" value="MinIO Gold&#xa;s3://gold/" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="storage-ns">
+          <mxGeometry x="80" y="450" width="120" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="pg-dw" value="PostgreSQL DW&#xa;(fact_detections,&#xa;dim_*)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="storage-ns">
+          <mxGeometry x="80" y="560" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="dvc" value="DVC&#xa;(dataset version)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="storage-ns">
+          <mxGeometry x="80" y="670" width="120" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="proc-ns" value="processing-ns" style="swimlane;fontSize=14;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontStyle=1;startSize=28;" vertex="1" parent="1">
+          <mxGeometry x="620" y="100" width="280" height="600" as="geometry" />
+        </mxCell>
+        <mxCell id="spark-bs" value="Spark (Bronze→Silver)&#xa;• Clean&#xa;• Crop faces&#xa;• Standardize" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="proc-ns">
+          <mxGeometry x="60" y="80" width="160" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="spark-sg" value="Spark (Silver→Gold)&#xa;• Aggregate&#xa;• Feature engineer&#xa;• Fact/Dim tables" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="proc-ns">
+          <mxGeometry x="60" y="380" width="160" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="val-ns" value="validation-ns" style="swimlane;fontSize=14;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontStyle=1;startSize=28;" vertex="1" parent="1">
+          <mxGeometry x="980" y="240" width="260" height="260" as="geometry" />
+        </mxCell>
+        <mxCell id="ge" value="Great Expectations&#xa;• schema check&#xa;• null check&#xa;• range validation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="val-ns">
+          <mxGeometry x="40" y="60" width="180" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="meta-ns" value="metadata-ns" style="swimlane;fontSize=14;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontStyle=1;startSize=28;" vertex="1" parent="1">
+          <mxGeometry x="1300" y="240" width="220" height="260" as="geometry" />
+        </mxCell>
+        <mxCell id="datahub" value="DataHub&#xa;(lineage +&#xa;catalog)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="meta-ns">
+          <mxGeometry x="30" y="60" width="160" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="orch-ns" value="orchestration-ns" style="swimlane;fontSize=14;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontStyle=1;startSize=28;" vertex="1" parent="1">
+          <mxGeometry x="1580" y="240" width="260" height="260" as="geometry" />
+        </mxCell>
+        <mxCell id="airflow" value="Airflow DAG&#xa;batch_etl_daily&#xa;• schedule: 02:00&#xa;• K8sExecutor" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontSize=11;" vertex="1" parent="orch-ns">
+          <mxGeometry x="40" y="60" width="180" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" value="Load raw images" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="src-box" target="minio-bronze">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="Read Bronze" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="minio-bronze" target="spark-bs">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" value="Write Silver" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="spark-bs" target="minio-silver">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" value="Validate Silver" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="minio-silver" target="ge">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" value="Pass" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="ge" target="spark-sg">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" value="Write Gold" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="spark-sg" target="minio-gold">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" value="Load DW" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="spark-sg" target="pg-dw">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" value="Version snapshot" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="minio-gold" target="dvc">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" value="Emit lineage" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;dashed=1;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="spark-sg" target="datahub">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" value="Trigger" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeWidth=2;fontSize=10;dashed=1;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="airflow" target="spark-bs">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="footer" value="v0.1 | 2026-04-19 | longhd" style="text;html=1;align=right;verticalAlign=middle;fontSize=10;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1040" width="1840" height="20" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
