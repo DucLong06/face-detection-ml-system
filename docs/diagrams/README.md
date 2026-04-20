@@ -10,14 +10,22 @@ Draw.io source files + style guide cho 11 architecture diagrams (MLOps L1+L2+L3+
 
 ## How to export PNG
 
-`File → Export As → PNG` → options:
-- Zoom: 200%
-- Border Width: 10
-- Background: White (uncheck Transparent)
-- Shadow: off
-- Selection only: off
+**CLI (preferred, deterministic):**
 
-Save PNG cùng folder với `.drawio` (same basename).
+```bash
+cd docs/diagrams
+# Multi-page export — one PNG per page (drawio v29 requires -p <idx> per page):
+for i in 1 2 3 4 5 6 7 8 9 10 11; do
+  OUT=$(printf 'full-%02d.png' $i)
+  ELECTRON_DISABLE_GPU=1 drawio --no-sandbox -x -f png -t --border 10 \
+    -p $i -o "$OUT" full.drawio
+done
+ls full-*.png  # 11 files: full-01.png .. full-11.png
+```
+
+**GUI fallback (draw.io desktop / web):**
+`File → Export As → PNG` → Zoom 200%, Border Width 10, Background White, Shadow off.
+Repeat for each of 11 pages; save as `full-NN.png`.
 
 ## Save rule (CRITICAL)
 
@@ -30,6 +38,7 @@ Verify: `head -5 xx.drawio` phải thấy `<mxfile>` readable, không base64 blo
 | Element | Fill | Border | Notes |
 |---|---|---|---|
 | Canvas background | `#FFFFFF` | — | Pure white |
+| Actors zone | `#F5F5F5` | `#666666` | Neutral gray (used for page 01 Actors swimlane) |
 | CI/CD zone | `#FFF2CC` | `#D6B656` | Yellow cream |
 | GCE VM zone | `#FFF2CC` | `#D6B656` | Same as CI/CD |
 | GKE cluster zone | `#DAE8FC` | `#6C8EBF` | Light blue |
@@ -62,21 +71,24 @@ Verify: `head -5 xx.drawio` phải thấy `<mxfile>` readable, không base64 blo
 
 ## File naming
 
-Pattern: `XX-descriptive-slug.drawio` + matching `.png`.
+Single master file: `full.drawio` — multi-page, 11 diagrams.
+PNG exports: `full-XX.png` (one per page, zero-padded for lexical sort).
 
-| # | Diagram | File |
-|---|---|---|
-| 01 | Full system overview (all 16 ns) | `01-full-system-overview.{drawio,png}` |
-| 02 | Batch data flow (Bronze→Silver→Gold) | `02-batch-data-flow.{drawio,png}` |
-| 03 | Stream data flow (Kafka+Flink) | `03-stream-data-flow.{drawio,png}` |
-| 04 | CDC data flow (Debezium) | `04-cdc-data-flow.{drawio,png}` |
-| 05 | ML training pipeline (Kubeflow+MLflow+Katib) | `05-ml-training-pipeline.{drawio,png}` |
-| 06 | Model serving (KServe+Triton) | `06-model-serving.{drawio,png}` |
-| 07 | RAG pipeline (Ollama+Weaviate) | `07-rag-pipeline.{drawio,png}` |
-| 08 | SSO security flow (12-step OIDC) | `08-sso-security-flow.{drawio,png}` |
-| 09 | Drift detection (Evidently) | `09-drift-detection.{drawio,png}` |
-| 10 | LLM security architecture (guardrails) | `10-llm-security-architecture.{drawio,png}` |
-| 11 | Enhanced RAG (hybrid search + rerank) | `11-enhanced-rag-pipeline.{drawio,png}` |
+| # | Diagram | Page name (in `full.drawio`) | PNG |
+|---|---|---|---|
+| 01 | Full system overview (all 16 ns) | `Full System Overview` | `full-01.png` |
+| 02 | Batch data flow (Bronze→Silver→Gold) | `Batch Data Flow` | `full-02.png` |
+| 03 | Stream data flow (Kafka+Flink) | `Stream Data Flow` | `full-03.png` |
+| 04 | CDC data flow (Debezium from `app-oltp-ns`) | `CDC Data Flow` | `full-04.png` |
+| 05 | ML training pipeline (Kubeflow+MLflow+Katib) | `ML Training Pipeline` | `full-05.png` |
+| 06 | Model serving (KServe+Triton) | `Model Serving` | `full-06.png` |
+| 07 | RAG pipeline (Ollama+Weaviate+RAGFlow) | `RAG Pipeline` | `full-07.png` |
+| 08 | SSO security flow (12-step OIDC) | `SSO Security Flow` | `full-08.png` |
+| 09 | Drift detection (Evidently) | `Drift Detection` | `full-09.png` |
+| 10 | LLM security architecture (guardrails) | `LLM Security Architecture` | `full-10.png` |
+| 11 | Enhanced RAG (hybrid search + rerank) | `Enhanced RAG Pipeline` | `full-11.png` |
+
+Template: `_template.drawio` (skeleton for new diagrams; not merged into `full.drawio`).
 
 ## Icon notes
 

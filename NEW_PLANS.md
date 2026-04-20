@@ -854,6 +854,7 @@ GKE Cluster: face-detection-cluster
 │
 ├── model-serving-ns          ← FastAPI + YOLOv11 (MLOps 1)
 ├── serving-ns                ← KServe + Triton + RayServe + KEDA (MLOps 3)
+├── app-oltp-ns               ← Application OLTP DB (PostgreSQL wal_level=logical; Debezium logical replication source; see diagram 04 CDC Data Flow)
 │
 ├── ingestion-ns              ← Kafka KRaft, Schema Registry, Debezium
 ├── streaming-ns              ← Flink (JobManager + TaskManager)
