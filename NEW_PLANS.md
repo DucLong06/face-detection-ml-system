@@ -1,12 +1,20 @@
 # Face Detection MLOps - Extended Architecture Plans
 
+> **⚠️ 2026-05-21 SUPERSEDED BY YAGNI CUT** — This document reflects v0.1 maximum-ambition design (40 components, 16 ns). For active v0.2 scope (22 components, 9 ns), see:
+> - [docs/system-architecture.md](docs/system-architecture.md) — current authoritative architecture
+> - [docs/archive/cut-components-v0.1.md](docs/archive/cut-components-v0.1.md) — what was cut + why
+> - [README.md](README.md) §"Why this stack" / §"What I cut & why"
+>
+> **Cut sections to ignore**: §5 (RAG Pipeline), §6 (LLM Security), §7 (Enhanced RAG), §8 (Airflow orchestration), §9 (DataHub), §11 (Triton/RayServe), §12 (Flink), §13 (ArgoCD/deployKF), §14 (DVC), §15 (Locust), §16 (NGINX), §17 (Keycloak). Section numbers may not match exactly — use document search.
+
 ## Document Overview
 
 This document describes the **complete architecture expansion** from MLOps Level 1 (current) to MLOps Level 2 (Data Engineering) and MLOps Level 3 (Advanced ML Platform + RAG/LLM). It covers all Kubernetes namespaces, tool selections, data flows, user roles, SSO integration, and coursework requirements (Sections 01-04).
 
-> **Status**: Research & Design Phase (NOT implementation yet)
-> **Scope**: Maximum ambition - covers both AI Track 4A (ML System) + 4B (LLM/Agent)
-> **Reference Diagrams**: See `images/` folder and `architecture_detailed.html`
+> **Status**: Research & Design Phase — Historical Reference (v0.1, superseded by v0.2 cut)
+> **Scope (v0.1)**: Maximum ambition - covers both AI Track 4A (ML System) + 4B (LLM/Agent)
+> **Scope (v0.2 current)**: Trimmed to AI Track 4A only (face detection focus, RAG/LLM cut)
+> **Reference Diagrams**: See `docs/diagrams/` (drawio v0.1, deprecated) / `docs/diagrams-d2/` (D2 v0.2, active after Phase 02)
 
 ---
 

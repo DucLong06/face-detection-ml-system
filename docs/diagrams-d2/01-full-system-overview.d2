@@ -1,0 +1,107 @@
+# 01 — Full System Overview (9 namespaces, post-YAGNI cut)
+...@style/tokens
+
+title: "Face Detection MLOps — Full System Overview (9 NS · L1+L2+L3+SSO)" {
+  near: top-center
+  shape: text
+  style.font-size: 20
+  style.bold: true
+}
+
+actors: "Actors" {
+  end-user: "End User" {class: actor}
+  data-eng: "Data Engineer" {class: actor}
+  ml-eng: "ML Engineer" {class: actor}
+  devops: "DevOps Admin" {class: actor}
+}
+
+gateway: "Gateway / Auth Layer" {
+  class: auth
+  istio: "Istio Gateway" {class: tool}
+  oauth2: "OAuth2 Proxy" {class: tool}
+  dex: "Dex (OIDC IdP)" {class: tool}
+  istio -> oauth2: "session check"
+  oauth2 -> dex: "OIDC verify"
+}
+
+serving: "Serving Layer" {
+  class: gke
+  model-serving-ns: "model-serving-ns" {
+    class: ns
+    fastapi: "FastAPI + YOLOv11" {class: tool}
+    kserve: "KServe (optional)" {class: tool}
+  }
+  ml-pipeline-ns: "ml-pipeline-ns" {
+    class: ns
+    kubeflow: "Kubeflow Pipelines" {class: tool}
+    mlflow: "MLflow Registry" {class: tool}
+    katib: "Katib (HPO)" {class: tool}
+  }
+}
+
+data: "Data Layer (L2)" {
+  class: gke
+  ingestion-ns: "ingestion-ns" {
+    class: ns
+    kafka: "Kafka KRaft" {class: tool}
+    schema: "Schema Registry" {class: tool}
+    debezium: "Debezium (CDC)" {class: tool}
+  }
+  processing-ns: "processing-ns" {
+    class: ns
+    spark-master: "Spark Master" {class: tool}
+    spark-worker: "Spark Workers" {class: tool}
+    ge: "Great Expectations" {class: tool}
+  }
+  storage-ns: "storage-ns" {
+    class: ns
+    minio: "MinIO (S3)" {class: store}
+    pg: "PostgreSQL DW" {class: store}
+    redis: "Redis Cache" {class: store}
+  }
+}
+
+obs: "Observability" {
+  class: gke
+  monitoring-ns: "monitoring-ns" {
+    class: obs
+    prom: "Prometheus" {class: tool}
+    graf: "Grafana" {class: tool}
+    evidently: "Evidently (drift)" {class: tool}
+    k6: "k6 load test" {class: tool}
+  }
+  logging-ns: "logging-ns" {
+    class: obs
+    es: "Elasticsearch" {class: store}
+    kibana: "Kibana" {class: tool}
+    filebeat: "Filebeat" {class: tool}
+  }
+  tracing-ns: "tracing-ns" {
+    class: obs
+    jaeger: "Jaeger (10%)" {class: tool}
+  }
+}
+
+cicd: "External Infrastructure + CI/CD" {
+  class: cicd
+  jenkins: "Jenkins (GCE VM)" {class: tool}
+  github: "GitHub" {class: tool}
+  dockerhub: "Docker Hub" {class: tool}
+  tf: "Terraform" {class: tool}
+  helm: "Helm" {class: tool}
+}
+
+actors.end-user -> gateway.istio: "1. HTTPS request"
+gateway.istio -> serving.model-serving-ns.fastapi: "2. route /detect/*"
+actors.ml-eng -> serving.ml-pipeline-ns.kubeflow: "submit pipeline"
+actors.data-eng -> data.ingestion-ns.kafka: "produce events"
+actors.devops -> cicd.jenkins: "commit triggers"
+cicd.github -> cicd.jenkins: "webhook"
+cicd.jenkins -> cicd.dockerhub: "push image"
+cicd.jenkins -> serving.model-serving-ns.fastapi: "kubectl apply"
+data.processing-ns.spark-master -> data.storage-ns.minio: "read/write parquet"
+serving.ml-pipeline-ns.kubeflow -> data.storage-ns.minio: "load training set"
+serving.ml-pipeline-ns.kubeflow -> serving.ml-pipeline-ns.mlflow: "log runs"
+serving.model-serving-ns.fastapi -> obs.monitoring-ns.prom: "scrape /metrics" {class: dashed}
+serving.model-serving-ns.fastapi -> obs.tracing-ns.jaeger: "OTLP" {class: dashed}
+serving.model-serving-ns.fastapi -> obs.logging-ns.filebeat: "stderr" {class: dashed}

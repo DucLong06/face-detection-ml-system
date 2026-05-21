@@ -34,6 +34,29 @@
 ## Overview
 This project demonstrates a production-grade MLOps pipeline that deploys a YOLOv11-based face detection service on Google Kubernetes Engine (GKE). By leveraging modern cloud-native technologies, it offers a complete solution for automated deployment, comprehensive monitoring, and efficient scaling of machine learning models in production. The pipeline incorporates industry best practices for CI/CD, observability, and infrastructure as code.
 
+### Why this stack (v0.2 scope)
+- **Inference**: FastAPI + YOLOv11 (Ultralytics) — lightweight, GPU-optional, OpenTelemetry-instrumented
+- **Orchestration**: Kubeflow Pipelines + Katib + MLflow — covers train DAG, HPO, model registry in one ecosystem (no Airflow overlap)
+- **Data**: Kafka KRaft + Spark + MinIO + Great Expectations — event-driven ingest, batch processing, S3-compatible artifact storage, declarative data quality
+- **Observability**: Prometheus + Grafana + ELK + Jaeger + Evidently — three pillars (metrics/logs/traces) + ML drift detection
+- **Security**: Istio mTLS + Dex OIDC + OAuth2 Proxy + NetworkPolicy — defense in depth without Keycloak heavyweight
+- **DevOps**: Jenkins + Terraform + Helm — battle-tested, no abstraction tax (skip ArgoCD/deployKF for single-cluster scope)
+
+### What I cut & why (post-YAGNI audit)
+Per [docs/archive/cut-components-v0.1.md](docs/archive/cut-components-v0.1.md), removed ~18 components from v0.1 plan:
+- **Entire RAG stack** (RAGFlow, Ollama, Weaviate, Typesense, Langfuse) — irrelevant to face DETECTION (computer vision ≠ LLM use case)
+- **Triton + RayServe + RayTune** — serving framework redundancy (KServe sufficient)
+- **Flink** — Spark Structured Streaming covers throughput target
+- **Airflow + ArgoCD + deployKF** — orchestration overlap (Kubeflow + Jenkins + helm suffice)
+- **DVC + DataHub + Locust + NGINX Ingress + Keycloak** — redundant or overkill
+
+Result: 40 components / 16 ns → **22 components / 9 ns**. Estimated cost: $1118/mo → $311/mo. Interview narrative: depth over breadth.
+
+### What's next
+- L1 production hardening: liveness/readiness probes, HPA, scoped RBAC, NetworkPolicy, PDB (Phase 03)
+- L2 actual deployment (currently docs-only) — Kafka + Spark + MinIO in `data-platform-ns`
+- L3 Istio mTLS STRICT + KServe canary demo
+
 ### System Architecture
 The system architecture diagram below illustrates the main components and their interactions:
 
@@ -278,13 +301,15 @@ Example:
 kubectl create token model-serving-sa -n model-serving --duration=8760h
 ```
 4. Set up GKE permissions:
+
+> **⚠️ DEPRECATED (Phase 03 L1 hardening)**: The commands below grant `cluster-admin` to `model-serving-sa` and the namespace's default SA. The chart now ships scoped `Role`/`RoleBinding` (`charts/face-detection/templates/rbac.yaml`). Use the scoped RBAC instead and audit-delete legacy bindings — see [docs/deployment-guide.md §Production Hardening](docs/deployment-guide.md#production-hardening-phase-03--l1-fundamentals).
+
 ```bash
-# Create admin binding for model-serving-sa service account
+# LEGACY (DO NOT USE for new installs):
 kubectl create clusterrolebinding model-serving-admin-binding \
   --clusterrole=cluster-admin \
   --serviceaccount=model-serving:model-serving-sa
 
-# Create admin binding for default service account
 kubectl create clusterrolebinding cluster-admin-default-binding \
   --clusterrole=cluster-admin \
   --user=system:serviceaccount:model-serving:default

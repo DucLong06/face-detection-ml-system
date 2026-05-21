@@ -1,9 +1,11 @@
 # ADR-001: Full Architecture Review — Face Detection MLOps Extended System
 
-**Status:** Proposed
-**Date:** 2026-04-12
+**Status:** Superseded (2026-05-21) — see [docs/archive/cut-components-v0.1.md](./docs/archive/cut-components-v0.1.md)
+**Date:** 2026-04-12 (original) · 2026-05-21 (post-cut re-scoring)
 **Reviewer:** Architecture Review Agent
 **Author:** Hoàng Đức Long (longloe.draft@gmail.com)
+
+> **2026-05-21 YAGNI cut**: scope reduced from 40 components / 16 ns → 22 components / 9 ns. Original 7.8/10 score reflected inflated breadth optimism. Realistic re-score: **6.5/10** (current state, post-cut docs but pre-L1-hardening). Target after Phase 03 L1 hardening: **8.0/10** with concrete production fundamentals (probes, HPA, scoped RBAC, NetworkPolicy, PDB).
 
 ---
 
@@ -372,7 +374,9 @@ resource "google_container_node_pool" "stateful" {
 | **Documentation** | 9/10 | README_EXTENDED + NEW_PLANS + diagrams are excellent. |
 | **Implementation Readiness** | 5/10 | Design is complete, but zero Helm charts/configs exist for new components. |
 
-### **Overall: 7.8/10 — Strong design, needs infrastructure planning and implementation.**
+### **Overall (original): 7.8/10** — Inflated by breadth optimism. Post-cut re-score: **6.5/10 (current)** · **8.0/10 (target after L1 hardening)**.
+
+> Post-2026-05-21 cut: removed RAG stack, Triton+RayServe, Flink, Airflow, ArgoCD, deployKF, DVC, DataHub, NGINX, Locust. Trimmed Keycloak→Dex. New narrative emphasizes depth (L1 production rigor) over breadth (40 tools).
 
 ---
 

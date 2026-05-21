@@ -1,0 +1,60 @@
+# 05 — ML Training Pipeline (Kubeflow + MLflow + Katib)
+...@style/tokens
+
+title: "ML Training Pipeline — Kubeflow Pipelines + Katib HPO + MLflow Registry" {
+  near: top-center
+  shape: text
+  style.font-size: 18
+  style.bold: true
+}
+
+inputs: "storage-ns (inputs)" {
+  class: ns
+  dw: "PostgreSQL DW\nfact_detections\ndim_images" {class: store}
+  gold: "MinIO Gold\ns3://gold/training/\n(features + labels)" {class: store}
+}
+
+pipeline: "ml-pipeline-ns" {
+  class: ns
+  notebook: "Kubeflow Notebook\n(EDA + prototyping)" {class: tool}
+
+  dag: "Kubeflow Pipeline DAG" {
+    s1: "Step 1\ndata-load\n(from MinIO Gold)" {class: tool}
+    s2: "Step 2\npreprocess\n(augment, split)" {class: tool}
+    s3: "Step 3\ntrain YOLOv11" {class: tool}
+    s4: "Step 4\nevaluate\n(mAP, FPR)" {class: tool}
+    s5: "Step 5\nregister candidate\n(MLflow)" {class: tool}
+    s6: "Step 6\nexport ONNX\n(no TensorRT in v0.2)" {class: tool}
+    s7: "Step 7\ndeploy canary\n(KServe)" {class: tool}
+
+    s1 -> s2: "preprocess"
+    s2 -> s3: "train"
+    s3 -> s4: "evaluate"
+    s4 -> s5: "promote"
+    s5 -> s6: "export"
+    s6 -> s7: "canary"
+  }
+
+  katib: "Katib (HPO)\n• lr, batch, aug\n• maxTrial=10\n• best → step 3" {class: tool}
+  mlflow-tracking: "MLflow Tracking Server\n• experiments\n• params / metrics\n• artifacts" {class: tool}
+  mlflow-registry: "MLflow Model Registry\nStages: None → Staging → Production → Archived" {class: tool}
+}
+
+outputs: "storage-ns (outputs)" {
+  class: ns
+  models: "MinIO\ns3://models/yolov11/\n.pt + .onnx" {class: store}
+  artifacts: "MinIO\ns3://mlflow/artifacts/" {class: store}
+}
+
+serving: "serving-ns" {
+  class: ns
+  kserve: "KServe InferenceService" {class: gke}
+}
+
+inputs.gold -> pipeline.dag.s1: "load features"
+pipeline.katib -> pipeline.dag.s3: "best hparams" {class: dashed}
+pipeline.dag.s3 -> pipeline.mlflow-tracking: "log metrics" {class: dashed}
+pipeline.dag.s5 -> pipeline.mlflow-registry: "register model"
+pipeline.dag.s6 -> outputs.models: "store weights"
+pipeline.mlflow-tracking -> outputs.artifacts: "store artifacts" {class: dashed}
+pipeline.dag.s7 -> serving.kserve: "canary deploy"

@@ -1,0 +1,41 @@
+# 09 — Drift Detection (Evidently AI)
+...@style/tokens
+
+title: "Drift Detection — Evidently AI continuous monitoring" {
+  near: top-center
+  shape: text
+  style.font-size: 18
+  style.bold: true
+}
+
+serving: "model-serving-ns" {
+  class: ns
+  fastapi: "FastAPI + YOLOv11" {class: tool}
+}
+
+storage: "storage-ns" {
+  class: ns
+  reference: "MinIO Reference\ns3://reference/v1/\n(training distribution)" {class: store}
+  prod-logs: "MinIO Prod Logs\ns3://prod-logs/inference/\n(rolling window)" {class: store}
+}
+
+monitoring: "monitoring-ns" {
+  class: obs
+  evidently: "Evidently Service\n• data drift (KS test)\n• prediction drift\n• feature stability" {class: tool}
+  prom: "Prometheus" {class: tool}
+  graf: "Grafana\n(drift dashboards)" {class: tool}
+  alert: "AlertManager" {class: tool}
+}
+
+pipeline: "ml-pipeline-ns" {
+  class: ns
+  retrain: "Kubeflow Pipeline\n(retrain trigger)" {class: tool}
+}
+
+serving.fastapi -> storage.prod-logs: "log predictions"
+storage.reference -> monitoring.evidently: "load baseline"
+storage.prod-logs -> monitoring.evidently: "load current"
+monitoring.evidently -> monitoring.prom: "expose drift metrics"
+monitoring.prom -> monitoring.graf: "query"
+monitoring.prom -> monitoring.alert: "drift > threshold"
+monitoring.alert -> pipeline.retrain: "webhook trigger" {class: dashed}

@@ -1,6 +1,10 @@
-# Face Detection MLOps — Architecture Diagrams
+# Face Detection MLOps — Architecture Diagrams (DEPRECATED)
 
-Draw.io source files + style guide cho 11 architecture diagrams (MLOps L1+L2+L3+RAG+SSO).
+> **2026-05-21**: This drawio-based folder is **deprecated**. Active diagrams migrated to D2 at `docs/diagrams-d2/`. This folder kept for audit trail until v0.2 release.
+>
+> **Scope cut**: pages 07 (RAG Pipeline), 10 (LLM Security), 11 (Enhanced RAG) removed per YAGNI audit. See [docs/archive/cut-components-v0.1.md](../archive/cut-components-v0.1.md).
+
+Draw.io source files + style guide cho 8 architecture diagrams (MLOps L1+L2+L3+SSO, RAG cut).
 
 ## How to edit
 
@@ -74,19 +78,19 @@ Verify: `head -5 xx.drawio` phải thấy `<mxfile>` readable, không base64 blo
 Single master file: `full.drawio` — multi-page, 11 diagrams.
 PNG exports: `full-XX.png` (one per page, zero-padded for lexical sort).
 
-| # | Diagram | Page name (in `full.drawio`) | PNG |
-|---|---|---|---|
-| 01 | Full system overview (all 16 ns) | `Full System Overview` | `full-01.png` |
-| 02 | Batch data flow (Bronze→Silver→Gold) | `Batch Data Flow` | `full-02.png` |
-| 03 | Stream data flow (Kafka+Flink) | `Stream Data Flow` | `full-03.png` |
-| 04 | CDC data flow (Debezium from `app-oltp-ns`) | `CDC Data Flow` | `full-04.png` |
-| 05 | ML training pipeline (Kubeflow+MLflow+Katib) | `ML Training Pipeline` | `full-05.png` |
-| 06 | Model serving (KServe+Triton) | `Model Serving` | `full-06.png` |
-| 07 | RAG pipeline (Ollama+Weaviate+RAGFlow) | `RAG Pipeline` | `full-07.png` |
-| 08 | SSO security flow (12-step OIDC) | `SSO Security Flow` | `full-08.png` |
-| 09 | Drift detection (Evidently) | `Drift Detection` | `full-09.png` |
-| 10 | LLM security architecture (guardrails) | `LLM Security Architecture` | `full-10.png` |
-| 11 | Enhanced RAG (hybrid search + rerank) | `Enhanced RAG Pipeline` | `full-11.png` |
+| # | Diagram | Page name (in `full.drawio`) | PNG | Status |
+|---|---|---|---|---|
+| 01 | Full system overview (9 ns post-cut) | `Full System Overview` | `full-01.png` | active |
+| 02 | Batch data flow (Bronze→Silver→Gold) | `Batch Data Flow` | `full-02.png` | active |
+| 03 | Stream data flow (Kafka+Spark Streaming) | `Stream Data Flow` | `full-03.png` | active |
+| 04 | CDC data flow (Debezium from `app-oltp-ns`) | `CDC Data Flow` | `full-04.png` | active |
+| 05 | ML training pipeline (Kubeflow+MLflow+Katib) | `ML Training Pipeline` | `full-05.png` | active |
+| 06 | Model serving (FastAPI + optional KServe) | `Model Serving` | `full-06.png` | active |
+| ~~07~~ | ~~RAG pipeline~~ | — | — | **CUT** (YAGNI) |
+| 08 | SSO security flow (12-step OIDC) | `SSO Security Flow` | `full-08.png` | active |
+| 09 | Drift detection (Evidently) | `Drift Detection` | `full-09.png` | active |
+| ~~10~~ | ~~LLM security architecture~~ | — | — | **CUT** (YAGNI) |
+| ~~11~~ | ~~Enhanced RAG~~ | — | — | **CUT** (YAGNI) |
 
 Template: `_template.drawio` (skeleton for new diagrams; not merged into `full.drawio`).
 

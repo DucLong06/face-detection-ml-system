@@ -20,7 +20,7 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from loguru import logger
 import socket
 from contextlib import closing
-from opentelemetry.sdk.trace.sampling import ALWAYS_ON
+from opentelemetry.sdk.trace.sampling import ParentBased, TraceIdRatioBased
 from starlette.types import ASGIApp
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
     OTLPSpanExporter as OTLPSpanExporterGRPC,
@@ -40,14 +40,18 @@ app.add_middleware(
 )
 # Get configuration from environment variables
 OTLP_GRPC_ENDPOINT = os.environ.get("OTLP_GRPC_ENDPOINT", "jaeger-jaeger.tracing.svc.cluster.local:4317")
+# Trace sampling ratio (0.0–1.0). Default 10% to balance observability vs storage cost (Phase 03 L1 hardening).
+TRACE_SAMPLE_RATIO = float(os.environ.get("TRACE_SAMPLE_RATIO", "0.1"))
 
 
 def setting_jaeger(app: ASGIApp, log_correlation: bool = True) -> None:
     try:
-        # set the tracer provider
+        # Parent-based sampler honors upstream sampling decisions (preserves traces across services);
+        # root spans use TraceIdRatioBased(TRACE_SAMPLE_RATIO).
+        sampler = ParentBased(root=TraceIdRatioBased(TRACE_SAMPLE_RATIO))
         tracer = TracerProvider(
             resource=Resource.create({SERVICE_NAME: "face-detection"}),
-            sampler=ALWAYS_ON
+            sampler=sampler
         )
         trace.set_tracer_provider(tracer)
 

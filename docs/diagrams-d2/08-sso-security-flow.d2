@@ -1,0 +1,54 @@
+# 08 — SSO Security Flow (12-step OIDC via Dex)
+# Note: Keycloak → Dex per YAGNI cut (lighter OIDC).
+...@style/tokens
+
+title: "SSO Security Flow — 12-step OIDC (Dex + OAuth2 Proxy + Istio)" {
+  near: top-center
+  shape: text
+  style.font-size: 18
+  style.bold: true
+}
+
+user: "User (browser)" {class: actor}
+
+istio-system: "istio-system" {
+  class: auth
+  gateway: "Istio Gateway\n(entry point)" {class: tool}
+  envoy: "EnvoyFilter\n(JWT validation per req)" {class: tool}
+}
+
+auth-ns: "auth-ns" {
+  class: auth
+  oauth2: "OAuth2 Proxy\n(session check)" {class: tool}
+  dex: "Dex\n(OIDC Identity Provider)\nfederates: GitHub/Google\nroles: 6 personas" {class: tool}
+}
+
+target: "target app (any ns)" {
+  class: ns
+  app: "Protected App\ne.g. Grafana / Kubeflow /\nKibana / MLflow" {class: tool}
+}
+
+user -> istio-system.gateway: "1. GET /app"
+istio-system.gateway -> auth-ns.oauth2: "2. route"
+auth-ns.oauth2 -> auth-ns.dex: "3-5. check session / redirect"
+auth-ns.dex -> auth-ns.oauth2: "7-8. exchange code + set cookie"
+auth-ns.oauth2 -> target.app: "10. redirect /app\n12. forward with claims"
+target.app -> istio-system.envoy: "validate JWT" {class: dashed}
+
+steps: |md
+  ### 12-step OIDC flow
+  1. User requests app.face-detect.dev
+  2. Istio Gateway intercepts
+  3. OAuth2 Proxy checks session cookie
+  4. No session → redirect /auth endpoint
+  5. Dex shows login page (federate IdP)
+  6. User submits credentials
+  7. Dex issues authorization code
+  8. Callback → OAuth2 Proxy exchanges code → JWT
+  9. Proxy sets wildcard session cookie *.face-detect.dev
+  10. Proxy redirects browser back to /app
+  11. EnvoyFilter validates JWT (RS256) on each request
+  12. Forward request with X-Auth-User claims header
+| {
+  near: center-right
+}

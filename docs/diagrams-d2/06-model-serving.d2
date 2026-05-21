@@ -1,0 +1,55 @@
+# 06 — Model Serving (FastAPI + optional KServe)
+# Prototype diagram — validates D2 syntax + visual quality.
+
+...@style/tokens
+
+title: "Face Detection MLOps — Model Serving" {
+  near: top-center
+  shape: text
+  style.font-size: 20
+  style.bold: true
+}
+
+client: "End User" {class: actor}
+
+istio: "Istio Gateway\n(L7 ingress + mTLS)" {
+  class: gke
+}
+
+serving-ns: "model-serving-ns" {
+  class: ns
+
+  fastapi: "FastAPI + YOLOv11\n(L1 production)" {class: tool}
+  service: "K8s Service :8000\n(ClusterIP)" {class: tool}
+  hpa: "HPA\n(CPU 70%, 1→3 replicas)" {class: tool}
+  kserve: "KServe InferenceService\n(optional L3 canary)" {class: tool}
+
+  fastapi -> service: "expose"
+  hpa -> fastapi: "scale" {class: dashed}
+  kserve -> fastapi: "route canary (v2)" {class: dashed}
+}
+
+monitoring-ns: "monitoring-ns" {
+  class: obs
+  prom: "Prometheus" {class: store}
+  graf: "Grafana" {class: tool}
+  graf -> prom: "query"
+}
+
+tracing-ns: "tracing-ns" {
+  class: obs
+  jaeger: "Jaeger\n(10% sampling)" {class: tool}
+}
+
+logging-ns: "logging-ns" {
+  class: obs
+  filebeat: "Filebeat" {class: tool}
+  es: "Elasticsearch" {class: store}
+  filebeat -> es: "ship logs"
+}
+
+client -> istio: "HTTPS POST\n/detect/faces/image"
+istio -> serving-ns.service: "route (host: face.detect.dev)"
+serving-ns.fastapi -> monitoring-ns.prom: "scrape /metrics" {class: dashed}
+serving-ns.fastapi -> tracing-ns.jaeger: "OTLP gRPC :4317" {class: dashed}
+serving-ns.fastapi -> logging-ns.filebeat: "stderr (loguru)" {class: dashed}

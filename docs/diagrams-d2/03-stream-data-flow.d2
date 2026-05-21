@@ -1,0 +1,55 @@
+# 03 — Stream Data Flow (Kafka + Spark Structured Streaming)
+# Note: Flink cut per YAGNI — Spark Structured Streaming covers throughput target.
+...@style/tokens
+
+title: "Stream Data Flow — Kafka + Spark Structured Streaming" {
+  near: top-center
+  shape: text
+  style.font-size: 18
+  style.bold: true
+}
+
+producers: "Producers" {
+  fastapi: "FastAPI\n(real-time inference events)" {class: tool}
+  edge: "Edge cameras\n(future: image stream)" {class: tool}
+}
+
+ingestion: "ingestion-ns" {
+  class: ns
+  kafka: "Kafka KRaft (3 brokers)" {class: tool}
+  schema: "Schema Registry\n(Avro contracts)" {class: tool}
+
+  topic-events: "Topic: inference-events\n(partitions=12, RF=3)" {class: tool}
+  topic-images: "Topic: image-stream\n(partitions=6, RF=3, claim-check)" {class: tool}
+
+  kafka -> topic-events
+  kafka -> topic-images
+}
+
+processing: "processing-ns" {
+  class: ns
+  spark-stream: "Spark Structured Streaming\n(micro-batch 30s)" {class: tool}
+  ge: "Great Expectations\n(streaming validation)" {class: tool}
+}
+
+storage: "storage-ns" {
+  class: ns
+  silver: "MinIO Silver" {class: store}
+  redis: "Redis Cache\n(low-latency lookup)" {class: store}
+}
+
+obs: "monitoring-ns" {
+  class: obs
+  prom: "Prometheus\n(Kafka lag, Spark batch dur)" {class: tool}
+}
+
+producers.fastapi -> ingestion.kafka: "produce (Avro)"
+producers.edge -> ingestion.kafka: "produce (future)"
+ingestion.schema -> ingestion.kafka: "validate contract" {class: dashed}
+ingestion.topic-events -> processing.spark-stream: "consume"
+ingestion.topic-images -> processing.spark-stream: "consume"
+processing.spark-stream -> processing.ge: "validate"
+processing.spark-stream -> storage.silver: "write append"
+processing.spark-stream -> storage.redis: "update cache"
+ingestion.kafka -> obs.prom: "JMX metrics" {class: dashed}
+processing.spark-stream -> obs.prom: "batch metrics" {class: dashed}

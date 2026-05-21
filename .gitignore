@@ -8,6 +8,13 @@ __pycache__/
 *.tgz
 credentials/*
 ssh_keys/*
+.claude/
+docs/
+datapipelines/
+plans/
+CLAUDE.md
+
+
 
 # Distribution / packaging
 .Python

@@ -1,0 +1,56 @@
+# 02 — Batch Data Flow (Medallion: Bronze → Silver → Gold)
+...@style/tokens
+
+title: "Batch Data Flow — Medallion Architecture (Spark + MinIO + Great Expectations)" {
+  near: top-center
+  shape: text
+  style.font-size: 18
+  style.bold: true
+}
+
+sources: "Sources" {
+  api: "FastAPI request logs" {class: tool}
+  upload: "Image uploads (S3 dropzone)" {class: tool}
+}
+
+ingestion: "ingestion-ns" {
+  class: ns
+  kafka: "Kafka raw-images topic\n(claim-check pattern)" {class: tool}
+}
+
+storage: "storage-ns" {
+  class: ns
+  bronze: "MinIO Bronze\ns3://bronze/raw/" {class: store}
+  silver: "MinIO Silver\ns3://silver/cleaned/" {class: store}
+  gold: "MinIO Gold\ns3://gold/training/" {class: store}
+  dw: "PostgreSQL DW\nfact_detections\ndim_images" {class: store}
+}
+
+processing: "processing-ns" {
+  class: ns
+  spark-bronze: "Spark Batch Job\n(Bronze ingest)" {class: tool}
+  spark-silver: "Spark Batch Job\n(Silver clean + dedupe)" {class: tool}
+  spark-gold: "Spark Batch Job\n(Gold features + labels)" {class: tool}
+  ge-bronze: "Great Expectations\n(schema validation)" {class: tool}
+  ge-silver: "Great Expectations\n(business rules)" {class: tool}
+}
+
+orchestration: "ml-pipeline-ns" {
+  class: ns
+  kubeflow: "Kubeflow Pipeline\n(daily batch DAG)" {class: tool}
+}
+
+sources.api -> ingestion.kafka: "events"
+sources.upload -> storage.bronze: "raw images (claim)"
+ingestion.kafka -> processing.spark-bronze: "consume metadata"
+processing.spark-bronze -> storage.bronze: "write parquet"
+processing.spark-bronze -> processing.ge-bronze: "validate"
+storage.bronze -> processing.spark-silver: "read bronze"
+processing.spark-silver -> storage.silver: "write parquet"
+processing.spark-silver -> processing.ge-silver: "validate"
+storage.silver -> processing.spark-gold: "read silver"
+processing.spark-gold -> storage.gold: "write training set"
+processing.spark-gold -> storage.dw: "upsert fact/dim"
+orchestration.kubeflow -> processing.spark-bronze: "trigger" {class: dashed}
+orchestration.kubeflow -> processing.spark-silver: "trigger" {class: dashed}
+orchestration.kubeflow -> processing.spark-gold: "trigger" {class: dashed}

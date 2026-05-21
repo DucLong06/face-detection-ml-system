@@ -1,0 +1,87 @@
+# Shared style tokens — Face Detection MLOps diagrams
+# Palette matches docs/diagrams/README.md drawio fallback for continuity.
+# Usage in each diagram: ...style/tokens.d2 (import via vars + classes)
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+    theme-id: 0
+    pad: 24
+    sketch: false
+  }
+}
+
+classes: {
+  cicd: {
+    style: {
+      fill: "#FFF2CC"
+      stroke: "#D6B656"
+      stroke-width: 2
+      font-color: "#1A1A1A"
+    }
+  }
+  gke: {
+    style: {
+      fill: "#DAE8FC"
+      stroke: "#6C8EBF"
+      stroke-width: 2
+      font-color: "#1A1A1A"
+    }
+  }
+  ns: {
+    style: {
+      fill: "#FFE6CC"
+      stroke: "#D79B00"
+      stroke-width: 2
+      font-color: "#1A1A1A"
+    }
+  }
+  obs: {
+    style: {
+      fill: "#D5E8D4"
+      stroke: "#82B366"
+      stroke-width: 2
+      font-color: "#1A1A1A"
+    }
+  }
+  auth: {
+    style: {
+      fill: "#F8CECC"
+      stroke: "#B85450"
+      stroke-width: 2
+      font-color: "#1A1A1A"
+    }
+  }
+  tool: {
+    shape: rectangle
+    style: {
+      fill: "#FFFFFF"
+      stroke: "#000000"
+      stroke-width: 1
+      border-radius: 8
+      font-color: "#1A1A1A"
+    }
+  }
+  store: {
+    shape: cylinder
+    style: {
+      fill: "#FFFFFF"
+      stroke: "#000000"
+      stroke-width: 1
+      font-color: "#1A1A1A"
+    }
+  }
+  actor: {
+    shape: person
+    style: {
+      fill: "#FFFFFF"
+      stroke: "#000000"
+    }
+  }
+  dashed: {
+    style: {
+      stroke-dash: 5
+      stroke: "#666666"
+    }
+  }
+}

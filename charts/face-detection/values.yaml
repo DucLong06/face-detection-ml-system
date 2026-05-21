@@ -11,3 +11,28 @@ service:
 ingress:
   enabled: true
   host: face-detection.local
+
+# L1 hardening (Phase 03)
+hpa:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 3
+  cpuTarget: 70
+
+pdb:
+  enabled: true
+  minAvailable: 1
+
+networkPolicy:
+  enabled: true
+  # namespace label (set via `kubectl label namespace <ns> name=<ns>`)
+  ingressFromNamespace: istio-system
+  egressNamespaces:
+    - monitoring
+    - tracing
+    - logging
+
+rbac:
+  create: true
+  # scoped Role: get/list/watch pods/services/endpoints in own namespace
+  # NO cluster-admin (audit cleanup separately)

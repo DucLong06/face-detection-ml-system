@@ -1,0 +1,43 @@
+# 04 — CDC Data Flow (Debezium from app OLTP → Kafka → Spark Merge)
+...@style/tokens
+
+title: "CDC Data Flow — Debezium PostgreSQL WAL → Kafka → Spark Merge" {
+  near: top-center
+  shape: text
+  style.font-size: 18
+  style.bold: true
+}
+
+app-oltp: "app-oltp-ns" {
+  class: ns
+  pg: "PostgreSQL OLTP\n(app primary DB)\n• users\n• detections\n• audit_log" {class: store}
+}
+
+ingestion: "ingestion-ns" {
+  class: ns
+  debezium: "Debezium Connect\n(Postgres WAL reader)" {class: tool}
+  kafka: "Kafka topic\ndbserver.public.detections" {class: tool}
+  debezium -> kafka: "publish change events"
+}
+
+processing: "processing-ns" {
+  class: ns
+  spark-cdc: "Spark Structured Streaming\n(CDC merge job)" {class: tool}
+}
+
+storage: "storage-ns" {
+  class: ns
+  bronze: "MinIO Bronze\n(append-only change log)" {class: store}
+  dw: "PostgreSQL DW\n(merged SCD2 dim_detections)" {class: store}
+}
+
+obs: "monitoring-ns" {
+  class: obs
+  prom: "Prometheus\n(replication lag)" {class: tool}
+}
+
+app-oltp.pg -> ingestion.debezium: "logical replication\n(WAL slot)"
+ingestion.kafka -> processing.spark-cdc: "consume CDC events"
+processing.spark-cdc -> storage.bronze: "append raw change"
+processing.spark-cdc -> storage.dw: "merge SCD2"
+ingestion.debezium -> obs.prom: "lag metric" {class: dashed}
