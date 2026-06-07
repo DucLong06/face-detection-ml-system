@@ -1,0 +1,184 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 860" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">
+<defs>
+<marker id="ar_a" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#1f2937"/></marker>
+<marker id="ar_blue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#2563eb"/></marker>
+<marker id="ar_red" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#dc2626"/></marker>
+<marker id="ar_orange" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#ea580c"/></marker>
+<marker id="ar_purple" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#7c3aed"/></marker>
+<marker id="ar_green" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#059669"/></marker>
+<marker id="ar_indigo" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#4f46e5"/></marker>
+<filter id="sh" x="-5%" y="-5%" width="110%" height="115%"><feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-opacity="0.18"/></filter>
+</defs>
+<rect width="1240" height="860" fill="#ffffff"/>
+<text x="620.0" y="34" text-anchor="middle" font-size="22" font-weight="700" fill="#1f2937">Face-Detect MLOps — Target Architecture (L1+L2+L3+RAG+SSO)</text>
+<text x="620.0" y="54" text-anchor="middle" font-size="13" fill="#6b7280">kind-dev (lightweight alts) -> GKE-demo (canonical) · 2026</text>
+<rect x="60" y="72" width="180" height="46" rx="7" fill="#e5e7eb" stroke="#6b7280" stroke-width="1.4" filter="url(#sh)"/>
+<text x="150.0" y="93.0" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">End User / Dev</text>
+<text x="150.0" y="108.0" text-anchor="middle" font-size="10" fill="#6b7280">browser + git push</text>
+<rect x="530" y="72" width="300" height="46" rx="7" fill="#fed7aa" stroke="#ea580c" stroke-width="1.4" filter="url(#sh)"/>
+<text x="680.0" y="93.0" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">SSO: Keycloak/Dex + OAuth2 Proxy</text>
+<text x="680.0" y="108.0" text-anchor="middle" font-size="10" fill="#6b7280">*.face-detect.dev · 6 RBAC roles</text>
+<rect x="900" y="72" width="280" height="46" rx="7" fill="#fed7aa" stroke="#ea580c" stroke-width="1.4" filter="url(#sh)"/>
+<text x="1040.0" y="93.0" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">Istio Gateway / Linkerd</text>
+<text x="1040.0" y="108.0" text-anchor="middle" font-size="10" fill="#6b7280">mTLS · routing</text>
+<rect x="40" y="140" width="250" height="150" rx="10" fill="#f9fafb" stroke="#6b7280" stroke-width="1.5" stroke-dasharray="6,4"/>
+<text x="52" y="160" font-size="13" font-weight="700" fill="#6b7280">DevOps / IaC</text>
+<rect x="60" y="168" width="210" height="40" rx="7" fill="#e5e7eb" stroke="#6b7280" stroke-width="1.4" filter="url(#sh)"/>
+<text x="165.0" y="186.0" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">Jenkins CI/CD</text>
+<text x="165.0" y="201.0" text-anchor="middle" font-size="10" fill="#6b7280">test->build->deploy</text>
+<rect x="60" y="216" width="100" height="40" rx="7" fill="#e5e7eb" stroke="#6b7280" stroke-width="1.4" filter="url(#sh)"/>
+<text x="110.0" y="234.0" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">Terraform</text>
+<text x="110.0" y="249.0" text-anchor="middle" font-size="10" fill="#6b7280">GKE IaC</text>
+<rect x="170" y="216" width="100" height="40" rx="7" fill="#e5e7eb" stroke="#6b7280" stroke-width="1.4" filter="url(#sh)"/>
+<text x="220.0" y="234.0" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">Ansible</text>
+<text x="220.0" y="249.0" text-anchor="middle" font-size="10" fill="#6b7280">Jenkins VM</text>
+<rect x="320" y="140" width="420" height="150" rx="10" fill="#f9fafb" stroke="#d97706" stroke-width="1.5" stroke-dasharray="6,4"/>
+<text x="332" y="160" font-size="13" font-weight="700" fill="#d97706">serving-ns (L1->L3)</text>
+<rect x="340" y="168" width="170" height="46" rx="7" fill="#fde68a" stroke="#d97706" stroke-width="1.4" filter="url(#sh)"/>
+<text x="425.0" y="189.0" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">KServe + Triton</text>
+<text x="425.0" y="204.0" text-anchor="middle" font-size="10" fill="#6b7280">ONNX-CPU/TensorRT</text>
+<rect x="525" y="168" width="95" height="46" rx="7" fill="#fde68a" stroke="#d97706" stroke-width="1.4" filter="url(#sh)"/>
+<text x="572.5" y="189.0" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">FastAPI</text>
+<text x="572.5" y="204.0" text-anchor="middle" font-size="10" fill="#6b7280">YOLOv11 (L1)</text>
+<rect x="635" y="168" width="90" height="46" rx="7" fill="#fde68a" stroke="#d97706" stroke-width="1.4" filter="url(#sh)"/>
+<text x="680.0" y="189.0" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">KEDA</text>
+<text x="680.0" y="204.0" text-anchor="middle" font-size="10" fill="#6b7280">autoscale</text>
+<rect x="340" y="224" width="170" height="46" rx="7" fill="#fde68a" stroke="#d97706" stroke-width="1.4" filter="url(#sh)"/>
+<text x="425.0" y="245.0" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">Flagger</text>
+<text x="425.0" y="260.0" text-anchor="middle" font-size="10" fill="#6b7280">canary 5->100%</text>
+<rect x="525" y="224" width="200" height="46" rx="7" fill="#fde68a" stroke="#d97706" stroke-width="1.4" filter="url(#sh)"/>
+<text x="625.0" y="245.0" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">model registry pull</text>
+<text x="625.0" y="260.0" text-anchor="middle" font-size="10" fill="#6b7280">MLflow -> S3</text>
+<rect x="770" y="140" width="430" height="150" rx="10" fill="#f9fafb" stroke="#4f46e5" stroke-width="1.5" stroke-dasharray="6,4"/>
+<text x="782" y="160" font-size="13" font-weight="700" fill="#4f46e5">ml-pipeline-ns (L3)</text>
+<rect x="790" y="168" width="180" height="46" rx="7" fill="#c7d2fe" stroke="#4f46e5" stroke-width="1.4" filter="url(#sh)"/>
+<text x="880.0" y="189.0" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">Kubeflow / Argo WF</text>
+<text x="880.0" y="204.0" text-anchor="middle" font-size="10" fill="#6b7280">training DAG</text>
+<rect x="985" y="168" width="95" height="46" rx="7" fill="#c7d2fe" stroke="#4f46e5" stroke-width="1.4" filter="url(#sh)"/>
+<text x="1032.5" y="189.0" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">Katib</text>
+<text x="1032.5" y="204.0" text-anchor="middle" font-size="10" fill="#6b7280">HPO</text>
+<rect x="1090" y="168" width="95" height="46" rx="7" fill="#c7d2fe" stroke="#4f46e5" stroke-width="1.4" filter="url(#sh)"/>
+<text x="1137.5" y="189.0" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">MLflow</text>
+<text x="1137.5" y="204.0" text-anchor="middle" font-size="10" fill="#6b7280">registry</text>
+<rect x="790" y="224" width="395" height="46" rx="7" fill="#c7d2fe" stroke="#4f46e5" stroke-width="1.4" filter="url(#sh)"/>
+<text x="987.5" y="245.0" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">ONNX export (CPU) · TensorRT INT8 (GPU)</text>
+<text x="987.5" y="260.0" text-anchor="middle" font-size="10" fill="#6b7280">model artifacts -> MinIO</text>
+<rect x="40" y="310" width="760" height="180" rx="10" fill="#f9fafb" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="6,4"/>
+<text x="52" y="330" font-size="13" font-weight="700" fill="#2563eb">Data Pipeline — ingestion/processing/storage (L2)</text>
+<rect x="60" y="344" width="150" height="46" rx="7" fill="#bfdbfe" stroke="#2563eb" stroke-width="1.4" filter="url(#sh)"/>
+<text x="135.0" y="365.0" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">Kafka KRaft</text>
+<text x="135.0" y="380.0" text-anchor="middle" font-size="10" fill="#6b7280">+ Schema Reg</text>
+<rect x="220" y="344" width="120" height="46" rx="7" fill="#bfdbfe" stroke="#2563eb" stroke-width="1.4" filter="url(#sh)"/>
+<text x="280.0" y="365.0" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">Debezium</text>
+<text x="280.0" y="380.0" text-anchor="middle" font-size="10" fill="#6b7280">CDC (GKE)</text>
+<rect x="350" y="344" width="150" height="46" rx="7" fill="#bfdbfe" stroke="#2563eb" stroke-width="1.4" filter="url(#sh)"/>
+<text x="425.0" y="365.0" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">Spark on K8s</text>
+<text x="425.0" y="380.0" text-anchor="middle" font-size="10" fill="#6b7280">Bronze/Silver/Gold</text>
+<rect x="510" y="344" width="130" height="46" rx="7" fill="#bfdbfe" stroke="#2563eb" stroke-width="1.4" filter="url(#sh)"/>
+<text x="575.0" y="365.0" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">Great Expect.</text>
+<text x="575.0" y="380.0" text-anchor="middle" font-size="10" fill="#6b7280">quality gates</text>
+<rect x="650" y="344" width="130" height="46" rx="7" fill="#bfdbfe" stroke="#2563eb" stroke-width="1.4" filter="url(#sh)"/>
+<text x="715.0" y="365.0" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">Airflow / Argo</text>
+<text x="715.0" y="380.0" text-anchor="middle" font-size="10" fill="#6b7280">ETL orchestr.</text>
+<rect x="60" y="400" width="150" height="46" rx="7" fill="#bfdbfe" stroke="#2563eb" stroke-width="1.4" filter="url(#sh)"/>
+<text x="135.0" y="421.0" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">MinIO</text>
+<text x="135.0" y="436.0" text-anchor="middle" font-size="10" fill="#6b7280">S3 data lake</text>
+<rect x="220" y="400" width="160" height="46" rx="7" fill="#bfdbfe" stroke="#2563eb" stroke-width="1.4" filter="url(#sh)"/>
+<text x="300.0" y="421.0" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">PostgreSQL DW</text>
+<text x="300.0" y="436.0" text-anchor="middle" font-size="10" fill="#6b7280">Gold star schema</text>
+<rect x="390" y="400" width="110" height="46" rx="7" fill="#bfdbfe" stroke="#2563eb" stroke-width="1.4" filter="url(#sh)"/>
+<text x="445.0" y="421.0" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">Redis</text>
+<text x="445.0" y="436.0" text-anchor="middle" font-size="10" fill="#6b7280">feature cache</text>
+<rect x="510" y="400" width="270" height="46" rx="7" fill="#f9fafb" stroke="#2563eb" stroke-width="1.4" filter="url(#sh)"/>
+<text x="645.0" y="421.0" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">WIDER FACE · camera · API uploads</text>
+<text x="645.0" y="436.0" text-anchor="middle" font-size="10" fill="#6b7280">data sources</text>
+<rect x="820" y="310" width="380" height="180" rx="10" fill="#f9fafb" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="6,4"/>
+<text x="832" y="330" font-size="13" font-weight="700" fill="#dc2626">drift / retrain loop (L3) * centerpiece</text>
+<rect x="840" y="344" width="165" height="46" rx="7" fill="#fecaca" stroke="#dc2626" stroke-width="1.4" filter="url(#sh)"/>
+<text x="922.5" y="365.0" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">Evidently AI</text>
+<text x="922.5" y="380.0" text-anchor="middle" font-size="10" fill="#6b7280">drift detect</text>
+<rect x="1015" y="344" width="165" height="46" rx="7" fill="#fecaca" stroke="#dc2626" stroke-width="1.4" filter="url(#sh)"/>
+<text x="1097.5" y="365.0" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">Prometheus alert</text>
+<text x="1097.5" y="380.0" text-anchor="middle" font-size="10" fill="#6b7280">score>0.5</text>
+<rect x="840" y="400" width="165" height="46" rx="7" fill="#fecaca" stroke="#dc2626" stroke-width="1.4" filter="url(#sh)"/>
+<text x="922.5" y="421.0" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">retrain trigger</text>
+<text x="922.5" y="436.0" text-anchor="middle" font-size="10" fill="#6b7280">Airflow/Argo DAG</text>
+<rect x="1015" y="400" width="165" height="46" rx="7" fill="#fecaca" stroke="#dc2626" stroke-width="1.4" filter="url(#sh)"/>
+<text x="1097.5" y="421.0" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">canary promote</text>
+<text x="1097.5" y="436.0" text-anchor="middle" font-size="10" fill="#6b7280">Flagger->KServe</text>
+<rect x="40" y="510" width="760" height="150" rx="10" fill="#f9fafb" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="6,4"/>
+<text x="52" y="530" font-size="13" font-weight="700" fill="#7c3aed">rag-ns (L3 / AI Track 4B — parallel, different domain)</text>
+<rect x="60" y="544" width="140" height="46" rx="7" fill="#ddd6fe" stroke="#7c3aed" stroke-width="1.4" filter="url(#sh)"/>
+<text x="130.0" y="565.0" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">Ollama</text>
+<text x="130.0" y="580.0" text-anchor="middle" font-size="10" fill="#6b7280">TinyLlama CPU</text>
+<rect x="210" y="544" width="140" height="46" rx="7" fill="#ddd6fe" stroke="#7c3aed" stroke-width="1.4" filter="url(#sh)"/>
+<text x="280.0" y="565.0" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">RAGFlow</text>
+<text x="280.0" y="580.0" text-anchor="middle" font-size="10" fill="#6b7280">RAG engine</text>
+<rect x="360" y="544" width="130" height="46" rx="7" fill="#ddd6fe" stroke="#7c3aed" stroke-width="1.4" filter="url(#sh)"/>
+<text x="425.0" y="565.0" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">Weaviate</text>
+<text x="425.0" y="580.0" text-anchor="middle" font-size="10" fill="#6b7280">vector DB</text>
+<rect x="500" y="544" width="130" height="46" rx="7" fill="#ddd6fe" stroke="#7c3aed" stroke-width="1.4" filter="url(#sh)"/>
+<text x="565.0" y="565.0" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">Typesense</text>
+<text x="565.0" y="580.0" text-anchor="middle" font-size="10" fill="#6b7280">keyword srch</text>
+<rect x="640" y="544" width="140" height="46" rx="7" fill="#ddd6fe" stroke="#7c3aed" stroke-width="1.4" filter="url(#sh)"/>
+<text x="710.0" y="565.0" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">Langfuse</text>
+<text x="710.0" y="580.0" text-anchor="middle" font-size="10" fill="#6b7280">LLM observ.</text>
+<rect x="820" y="510" width="380" height="150" rx="10" fill="#f9fafb" stroke="#059669" stroke-width="1.5" stroke-dasharray="6,4"/>
+<text x="832" y="530" font-size="13" font-weight="700" fill="#059669">monitoring/logging/tracing-ns</text>
+<rect x="840" y="544" width="110" height="46" rx="7" fill="#bbf7d0" stroke="#059669" stroke-width="1.4" filter="url(#sh)"/>
+<text x="895.0" y="565.0" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">Prometheus</text>
+<text x="895.0" y="580.0" text-anchor="middle" font-size="10" fill="#6b7280">metrics</text>
+<rect x="960" y="544" width="100" height="46" rx="7" fill="#bbf7d0" stroke="#059669" stroke-width="1.4" filter="url(#sh)"/>
+<text x="1010.0" y="565.0" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">Grafana</text>
+<text x="1010.0" y="580.0" text-anchor="middle" font-size="10" fill="#6b7280">dashboards</text>
+<rect x="1070" y="544" width="110" height="46" rx="7" fill="#bbf7d0" stroke="#059669" stroke-width="1.4" filter="url(#sh)"/>
+<text x="1125.0" y="565.0" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">Loki / ELK</text>
+<text x="1125.0" y="580.0" text-anchor="middle" font-size="10" fill="#6b7280">logs</text>
+<rect x="840" y="544" width="0" height="0" rx="7" fill="#bbf7d0" stroke="#059669" stroke-width="1.4" filter="url(#sh)"/>
+<text x="840.0" y="548.0" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937"></text>
+<rect x="960" y="600" width="220" height="40" rx="7" fill="#bbf7d0" stroke="#059669" stroke-width="1.4" filter="url(#sh)"/>
+<text x="1070.0" y="618.0" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f2937">Jaeger 10% sampling</text>
+<text x="1070.0" y="633.0" text-anchor="middle" font-size="10" fill="#6b7280">traces</text>
+<line x1="150" y1="118" x2="150" y2="168" stroke="orange" stroke-width="2" marker-end="url(#ar_orange)"/>
+<rect x="134.0" y="134.0" width="32" height="15" rx="3" fill="#ffffff" opacity="0.95"/>
+<text x="150.0" y="145.0" text-anchor="middle" font-size="10" fill="#6b7280">push</text>
+<line x1="680" y1="118" x2="490" y2="168" stroke="orange" stroke-width="2" marker-end="url(#ar_orange)"/>
+<line x1="425" y1="290" x2="425" y2="344" stroke="blue" stroke-width="2" marker-end="url(#ar_blue)"/>
+<rect x="403.0" y="308.0" width="44" height="15" rx="3" fill="#ffffff" opacity="0.95"/>
+<text x="425.0" y="319.0" text-anchor="middle" font-size="10" fill="#6b7280">ingest</text>
+<line x1="500" y1="344" x2="510" y2="300" stroke="blue" stroke-width="2" stroke-dasharray="4,2" marker-end="url(#ar_blue)"/>
+<line x1="640" y1="423" x2="790" y2="200" stroke="indigo" stroke-width="2" stroke-dasharray="4,2" marker-end="url(#ar_indigo)"/>
+<rect x="681.0" y="302.5" width="68" height="15" rx="3" fill="#ffffff" opacity="0.95"/>
+<text x="715.0" y="313.5" text-anchor="middle" font-size="10" fill="#6b7280">Gold->train</text>
+<line x1="980" y1="214" x2="510" y2="168" stroke="indigo" stroke-width="2" marker-end="url(#ar_indigo)"/>
+<rect x="705.0" y="182.0" width="80" height="15" rx="3" fill="#ffffff" opacity="0.95"/>
+<text x="745.0" y="193.0" text-anchor="middle" font-size="10" fill="#6b7280">deploy model</text>
+<line x1="510" y1="191" x2="840" y2="360" stroke="red" stroke-width="2" stroke-dasharray="4,2" marker-end="url(#ar_red)"/>
+<rect x="638.0" y="266.5" width="74" height="15" rx="3" fill="#ffffff" opacity="0.95"/>
+<text x="675.0" y="277.5" text-anchor="middle" font-size="10" fill="#6b7280">predictions</text>
+<line x1="1005" y1="367" x2="1015" y2="367" stroke="red" stroke-width="2" marker-end="url(#ar_red)"/>
+<line x1="922" y1="390" x2="922" y2="400" stroke="red" stroke-width="2" marker-end="url(#ar_red)"/>
+<line x1="1015" y1="423" x2="1010" y2="300" stroke="red" stroke-width="2" stroke-dasharray="4,2" marker-end="url(#ar_red)"/>
+<rect x="981.5" y="352.5" width="62" height="15" rx="3" fill="#ffffff" opacity="0.95"/>
+<text x="1012.5" y="363.5" text-anchor="middle" font-size="10" fill="#6b7280">new model</text>
+<line x1="425" y1="490" x2="425" y2="510" stroke="purple" stroke-width="2" stroke-dasharray="4,2" marker-end="url(#ar_purple)"/>
+<rect x="385.0" y="491.0" width="80" height="15" rx="3" fill="#ffffff" opacity="0.95"/>
+<text x="425.0" y="502.0" text-anchor="middle" font-size="10" fill="#6b7280">metadata->RAG</text>
+<line x1="490" y1="270" x2="900" y2="544" stroke="green" stroke-width="2" stroke-dasharray="4,2" marker-end="url(#ar_green)"/>
+<rect x="646.0" y="398.0" width="98" height="15" rx="3" fill="#ffffff" opacity="0.95"/>
+<text x="695.0" y="409.0" text-anchor="middle" font-size="10" fill="#6b7280">scrape /metrics</text>
+<text x="60" y="700" font-size="12" font-weight="700" fill="#1f2937">Legend</text>
+<line x1="60" y1="722" x2="86" y2="722" stroke="blue" stroke-width="2" marker-end="url(#ar_blue)"/>
+<text x="92" y="726" font-size="11" fill="#6b7280">data flow</text>
+<line x1="210" y1="722" x2="236" y2="722" stroke="indigo" stroke-width="2" marker-end="url(#ar_indigo)"/>
+<text x="242" y="726" font-size="11" fill="#6b7280">ML/train</text>
+<line x1="360" y1="722" x2="386" y2="722" stroke="red" stroke-width="2" marker-end="url(#ar_red)"/>
+<text x="392" y="726" font-size="11" fill="#6b7280">drift loop</text>
+<line x1="510" y1="722" x2="536" y2="722" stroke="purple" stroke-width="2" marker-end="url(#ar_purple)"/>
+<text x="542" y="726" font-size="11" fill="#6b7280">RAG</text>
+<line x1="660" y1="722" x2="686" y2="722" stroke="green" stroke-width="2" marker-end="url(#ar_green)"/>
+<text x="692" y="726" font-size="11" fill="#6b7280">telemetry</text>
+<line x1="810" y1="722" x2="836" y2="722" stroke="orange" stroke-width="2" marker-end="url(#ar_orange)"/>
+<text x="842" y="726" font-size="11" fill="#6b7280">auth/CI</text>
+<text x="60" y="760" font-size="11" fill="#6b7280">kind-dev alts: Argo WF (vs Kubeflow) · Linkerd (vs Istio) · Loki (vs ELK) · Triton ONNX-CPU · single-broker Kafka. Full canonical stack -> GKE-demo.</text>
+</svg>

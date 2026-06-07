@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">
+<defs>
+<marker id="ar_a" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#1f2937"/></marker>
+<marker id="ar_blue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#2563eb"/></marker>
+<marker id="ar_red" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#dc2626"/></marker>
+<marker id="ar_purple" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#7c3aed"/></marker>
+<marker id="ar_green" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#059669"/></marker>
+<marker id="ar_indigo" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#4f46e5"/></marker>
+<marker id="ar_amber" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#d97706"/></marker>
+<marker id="ar_gold" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#ca8a04"/></marker>
+<filter id="sh" x="-5%" y="-5%" width="110%" height="115%"><feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-opacity="0.18"/></filter></defs>
+<rect width="1280" height="720" fill="#ffffff"/>
+<text x="640.0" y="34" text-anchor="middle" font-size="22" font-weight="700" fill="#1f2937">Data Pipeline Flow — Batch · Stream · CDC (Medallion L2)</text>
+<text x="640.0" y="54" text-anchor="middle" font-size="13" fill="#6b7280">claim-check: images->MinIO, metadata->Kafka · Bronze->Silver->Gold</text>
+<rect x="30" y="80" width="1220" height="180" rx="10" fill="#f9fafb" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="6,4"/>
+<text x="42" y="100" font-size="13" font-weight="700" fill="#2563eb">Batch lane — WIDER FACE dataset</text>
+<rect x="40" y="118" width="160" height="46" rx="7" fill="#f9fafb" stroke="#2563eb" stroke-width="1.4" filter="url(#sh)"/>
+<text x="120.0" y="139.0" text-anchor="middle" font-size="12" font-weight="600" fill="#1f2937">WIDER FACE</text>
+<text x="120.0" y="154.0" text-anchor="middle" font-size="9.5" fill="#6b7280">dataset</text>
+<rect x="220" y="118" width="150" height="46" rx="7" fill="#bfdbfe" stroke="#2563eb" stroke-width="1.4" filter="url(#sh)"/>
+<text x="295.0" y="139.0" text-anchor="middle" font-size="12" font-weight="600" fill="#1f2937">MinIO raw</text>
+<text x="295.0" y="154.0" text-anchor="middle" font-size="9.5" fill="#6b7280">Bronze</text>
+<rect x="390" y="118" width="150" height="46" rx="7" fill="#bfdbfe" stroke="#2563eb" stroke-width="1.4" filter="url(#sh)"/>
+<text x="465.0" y="139.0" text-anchor="middle" font-size="12" font-weight="600" fill="#1f2937">Spark Bronze</text>
+<text x="465.0" y="154.0" text-anchor="middle" font-size="9.5" fill="#6b7280">parse->Parquet</text>
+<rect x="560" y="118" width="150" height="46" rx="7" fill="#bfdbfe" stroke="#2563eb" stroke-width="1.4" filter="url(#sh)"/>
+<text x="635.0" y="139.0" text-anchor="middle" font-size="12" font-weight="600" fill="#1f2937">Spark Silver</text>
+<text x="635.0" y="154.0" text-anchor="middle" font-size="9.5" fill="#6b7280">normalize COCO</text>
+<rect x="730" y="118" width="160" height="46" rx="7" fill="#bfdbfe" stroke="#2563eb" stroke-width="1.4" filter="url(#sh)"/>
+<text x="810.0" y="139.0" text-anchor="middle" font-size="12" font-weight="600" fill="#1f2937">Spark Gold</text>
+<text x="810.0" y="154.0" text-anchor="middle" font-size="9.5" fill="#6b7280">feature eng</text>
+<rect x="905" y="118" width="170" height="46" rx="7" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.4" filter="url(#sh)"/>
+<text x="990.0" y="139.0" text-anchor="middle" font-size="12" font-weight="600" fill="#1f2937">PostgreSQL DW</text>
+<text x="990.0" y="154.0" text-anchor="middle" font-size="9.5" fill="#6b7280">fact+dim+feature</text>
+<rect x="1095" y="118" width="150" height="46" rx="7" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.4" filter="url(#sh)"/>
+<text x="1170.0" y="139.0" text-anchor="middle" font-size="12" font-weight="600" fill="#1f2937">MinIO gold/</text>
+<text x="1170.0" y="154.0" text-anchor="middle" font-size="9.5" fill="#6b7280">DVC versioned</text>
+<rect x="485" y="184" width="120" height="34" rx="7" fill="#bbf7d0" stroke="#059669" stroke-width="1.4" filter="url(#sh)"/>
+<text x="545.0" y="199.0" text-anchor="middle" font-size="12" font-weight="600" fill="#1f2937">GE check #1</text>
+<text x="545.0" y="214.0" text-anchor="middle" font-size="9.5" fill="#6b7280">Bronze->Silver</text>
+<rect x="660" y="184" width="120" height="34" rx="7" fill="#bbf7d0" stroke="#059669" stroke-width="1.4" filter="url(#sh)"/>
+<text x="720.0" y="199.0" text-anchor="middle" font-size="12" font-weight="600" fill="#1f2937">GE check #2</text>
+<text x="720.0" y="214.0" text-anchor="middle" font-size="9.5" fill="#6b7280">Silver->Gold</text>
+<line x1="200" y1="141" x2="220" y2="141" stroke="blue" stroke-width="2" marker-end="url(#ar_blue)"/>
+<line x1="370" y1="141" x2="390" y2="141" stroke="blue" stroke-width="2" marker-end="url(#ar_blue)"/>
+<line x1="540" y1="141" x2="560" y2="141" stroke="blue" stroke-width="2" marker-end="url(#ar_blue)"/>
+<line x1="710" y1="141" x2="730" y2="141" stroke="blue" stroke-width="2" marker-end="url(#ar_blue)"/>
+<line x1="890" y1="141" x2="905" y2="141" stroke="blue" stroke-width="2" marker-end="url(#ar_blue)"/>
+<line x1="1075" y1="141" x2="1095" y2="141" stroke="blue" stroke-width="2" marker-end="url(#ar_blue)"/>
+<line x1="540" y1="184" x2="510" y2="164" stroke="green" stroke-width="2" stroke-dasharray="4,2" marker-end="url(#ar_green)"/>
+<line x1="715" y1="184" x2="640" y2="164" stroke="green" stroke-width="2" stroke-dasharray="4,2" marker-end="url(#ar_green)"/>
+<rect x="30" y="290" width="1220" height="150" rx="10" fill="#f9fafb" stroke="#4f46e5" stroke-width="1.5" stroke-dasharray="6,4"/>
+<text x="42" y="310" font-size="13" font-weight="700" fill="#4f46e5">Stream lane — camera / API (real-time)</text>
+<rect x="40" y="328" width="170" height="46" rx="7" fill="#f9fafb" stroke="#4f46e5" stroke-width="1.4" filter="url(#sh)"/>
+<text x="125.0" y="349.0" text-anchor="middle" font-size="12" font-weight="600" fill="#1f2937">Camera / API</text>
+<text x="125.0" y="364.0" text-anchor="middle" font-size="9.5" fill="#6b7280">upload</text>
+<rect x="230" y="328" width="180" height="46" rx="7" fill="#c7d2fe" stroke="#4f46e5" stroke-width="1.4" filter="url(#sh)"/>
+<text x="320.0" y="349.0" text-anchor="middle" font-size="12" font-weight="600" fill="#1f2937">Kafka KRaft</text>
+<text x="320.0" y="364.0" text-anchor="middle" font-size="9.5" fill="#6b7280">Avro events</text>
+<rect x="430" y="328" width="170" height="46" rx="7" fill="#c7d2fe" stroke="#4f46e5" stroke-width="1.4" filter="url(#sh)"/>
+<text x="515.0" y="349.0" text-anchor="middle" font-size="12" font-weight="600" fill="#1f2937">Flink/Spark</text>
+<text x="515.0" y="364.0" text-anchor="middle" font-size="9.5" fill="#6b7280">validate</text>
+<rect x="640" y="328" width="170" height="46" rx="7" fill="#c7d2fe" stroke="#4f46e5" stroke-width="1.4" filter="url(#sh)"/>
+<text x="725.0" y="349.0" text-anchor="middle" font-size="12" font-weight="600" fill="#1f2937">Redis</text>
+<text x="725.0" y="364.0" text-anchor="middle" font-size="9.5" fill="#6b7280">feature cache</text>
+<rect x="840" y="328" width="180" height="46" rx="7" fill="#fde68a" stroke="#d97706" stroke-width="1.4" filter="url(#sh)"/>
+<text x="930.0" y="349.0" text-anchor="middle" font-size="12" font-weight="600" fill="#1f2937">KServe+Triton</text>
+<text x="930.0" y="364.0" text-anchor="middle" font-size="9.5" fill="#6b7280">inference</text>
+<rect x="1045" y="328" width="200" height="46" rx="7" fill="#fecaca" stroke="#dc2626" stroke-width="1.4" filter="url(#sh)"/>
+<text x="1145.0" y="349.0" text-anchor="middle" font-size="12" font-weight="600" fill="#1f2937">Kafka inference-results</text>
+<text x="1145.0" y="364.0" text-anchor="middle" font-size="9.5" fill="#6b7280">-> DW + drift loop</text>
+<line x1="210" y1="351" x2="230" y2="351" stroke="indigo" stroke-width="2" marker-end="url(#ar_indigo)"/>
+<line x1="410" y1="351" x2="430" y2="351" stroke="indigo" stroke-width="2" marker-end="url(#ar_indigo)"/>
+<line x1="600" y1="351" x2="640" y2="351" stroke="indigo" stroke-width="2" marker-end="url(#ar_indigo)"/>
+<line x1="810" y1="351" x2="840" y2="351" stroke="indigo" stroke-width="2" marker-end="url(#ar_indigo)"/>
+<line x1="1020" y1="351" x2="1045" y2="351" stroke="red" stroke-width="2" marker-end="url(#ar_red)"/>
+<line x1="515" y1="374" x2="990" y2="375" stroke="red" stroke-width="2" stroke-dasharray="4,2" marker-end="url(#ar_red)"/>
+<rect x="714.0" y="386" width="92" height="15" rx="3" fill="#ffffff" opacity="0.95"/>
+<text x="760" y="397" text-anchor="middle" font-size="10" fill="#6b7280">INVALID->alerts</text>
+<rect x="30" y="470" width="1220" height="140" rx="10" fill="#f9fafb" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="6,4"/>
+<text x="42" y="490" font-size="13" font-weight="700" fill="#dc2626">CDC lane — change data capture</text>
+<rect x="40" y="508" width="190" height="46" rx="7" fill="#f9fafb" stroke="#6b7280" stroke-width="1.4" filter="url(#sh)"/>
+<text x="135.0" y="529.0" text-anchor="middle" font-size="12" font-weight="600" fill="#1f2937">App PostgreSQL</text>
+<text x="135.0" y="544.0" text-anchor="middle" font-size="9.5" fill="#6b7280">face_detection DB</text>
+<rect x="250" y="508" width="160" height="46" rx="7" fill="#fecaca" stroke="#dc2626" stroke-width="1.4" filter="url(#sh)"/>
+<text x="330.0" y="529.0" text-anchor="middle" font-size="12" font-weight="600" fill="#1f2937">Debezium</text>
+<text x="330.0" y="544.0" text-anchor="middle" font-size="9.5" fill="#6b7280">WAL CDC</text>
+<rect x="460" y="508" width="170" height="46" rx="7" fill="#bfdbfe" stroke="#2563eb" stroke-width="1.4" filter="url(#sh)"/>
+<text x="545.0" y="529.0" text-anchor="middle" font-size="12" font-weight="600" fill="#1f2937">Kafka cdc.*</text>
+<text x="545.0" y="544.0" text-anchor="middle" font-size="9.5" fill="#6b7280">CDC topics</text>
+<rect x="670" y="508" width="170" height="46" rx="7" fill="#bfdbfe" stroke="#2563eb" stroke-width="1.4" filter="url(#sh)"/>
+<text x="755.0" y="529.0" text-anchor="middle" font-size="12" font-weight="600" fill="#1f2937">Spark merge</text>
+<text x="755.0" y="544.0" text-anchor="middle" font-size="9.5" fill="#6b7280">daily upsert</text>
+<rect x="900" y="508" width="190" height="46" rx="7" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.4" filter="url(#sh)"/>
+<text x="995.0" y="529.0" text-anchor="middle" font-size="12" font-weight="600" fill="#1f2937">PostgreSQL DW</text>
+<text x="995.0" y="544.0" text-anchor="middle" font-size="9.5" fill="#6b7280">dim upsert</text>
+<line x1="230" y1="531" x2="250" y2="531" stroke="blue" stroke-width="2" marker-end="url(#ar_blue)"/>
+<line x1="410" y1="531" x2="460" y2="531" stroke="blue" stroke-width="2" marker-end="url(#ar_blue)"/>
+<line x1="630" y1="531" x2="670" y2="531" stroke="blue" stroke-width="2" marker-end="url(#ar_blue)"/>
+<line x1="840" y1="531" x2="900" y2="531" stroke="blue" stroke-width="2" marker-end="url(#ar_blue)"/>
+<rect x="905" y="640" width="345" height="44" rx="7" fill="#f9fafb" stroke="#4f46e5" stroke-width="1.4" filter="url(#sh)"/>
+<text x="1077.5" y="660.0" text-anchor="middle" font-size="12" font-weight="600" fill="#1f2937">-> ML training (T2) · drift loop (T4)</text>
+<text x="1077.5" y="675.0" text-anchor="middle" font-size="9.5" fill="#6b7280">Gold layer feeds model pipeline</text>
+<line x1="990" y1="164" x2="990" y2="508" stroke="gold" stroke-width="2" stroke-dasharray="4,2" marker-end="url(#ar_gold)"/>
+<rect x="994.0" y="431" width="32" height="15" rx="3" fill="#ffffff" opacity="0.95"/>
+<text x="1010" y="442" text-anchor="middle" font-size="10" fill="#6b7280">Gold</text>
+<line x1="1077" y1="554" x2="1077" y2="640" stroke="indigo" stroke-width="2" stroke-dasharray="4,2" marker-end="url(#ar_indigo)"/>
+<text x="40" y="704" font-size="11" fill="#6b7280">Blue=batch/CDC data · Indigo=stream · Green=quality gate · Red=alerts/results · Gold=Gold layer artifacts</text>
+</svg>
