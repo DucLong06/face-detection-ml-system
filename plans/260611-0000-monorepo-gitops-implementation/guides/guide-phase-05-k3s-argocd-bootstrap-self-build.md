@@ -106,7 +106,7 @@ set -euo pipefail
 helm upgrade --install argocd argo/argo-cd -n argocd --create-namespace \
   -f gitops/platform/platform/argocd/values-cpu.yaml
 [ -n "${GITHUB_PAT:-}" ] && kubectl -n argocd create secret generic repo-face-detect \
-  --from-literal=type=git --from-literal=url=https://github.com/DucLong06/face-detect-gke.git \
+  --from-literal=type=git --from-literal=url=https://github.com/DucLong06/face-detection-ml-system.git \
   --from-literal=username=DucLong06 --from-literal=password="$GITHUB_PAT" \
   --dry-run=client -o yaml | kubectl apply -f - && \
   kubectl -n argocd label secret repo-face-detect argocd.argoproj.io/secret-type=repository --overwrite

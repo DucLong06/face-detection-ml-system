@@ -71,7 +71,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/DucLong06/face-detect-gke.git
+    repoURL: https://github.com/DucLong06/face-detection-ml-system.git
     targetRevision: main
     path: gitops/platform/platform/namespaces
   destination: { server: https://kubernetes.default.svc }
@@ -81,7 +81,7 @@ spec:
 **Repo private?** Tạo token đọc-repo (Settings→Developer→fine-grained PAT, content:read) rồi:
 ```bash
 kubectl -n argocd create secret generic repo-face-detect \
-  --from-literal=type=git --from-literal=url=https://github.com/DucLong06/face-detect-gke.git \
+  --from-literal=type=git --from-literal=url=https://github.com/DucLong06/face-detection-ml-system.git \
   --from-literal=username=DucLong06 --from-literal=password=<PAT>
 kubectl -n argocd label secret repo-face-detect argocd.argoproj.io/secret-type=repository
 ```
@@ -95,7 +95,7 @@ metadata: { name: root, namespace: argocd }
 spec:
   project: default
   source:
-    repoURL: https://github.com/DucLong06/face-detect-gke.git
+    repoURL: https://github.com/DucLong06/face-detection-ml-system.git
     targetRevision: main
     path: gitops/apps          # root chỉ trỏ thư mục Application CRDs
   destination: { server: https://kubernetes.default.svc }
@@ -152,7 +152,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/DucLong06/face-detect-gke.git
+    repoURL: https://github.com/DucLong06/face-detection-ml-system.git
     targetRevision: main
     path: charts/face-detect
     helm: { valueFiles: [values-cpu.yaml] }
