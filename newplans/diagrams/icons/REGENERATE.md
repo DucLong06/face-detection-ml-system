@@ -1,17 +1,27 @@
 # Regenerate icon diagrams
 
-Requires: python `diagrams` lib + system `dot` (graphviz) + `cairosvg` (for icon prep).
+Requires: python `cairosvg` + `Pillow` (no graphviz needed — layout is hand-laid).
 
 ```bash
-pip install --user --break-system-packages diagrams cairosvg
-# graphviz binary: apt-get install graphviz  (or extract .deb locally if no sudo)
+pip install --user --break-system-packages cairosvg pillow
 
-# 1) prepare custom tool icons -> /tmp/icons/png/
+# 1) prepare tool icons -> /tmp/icons/png/  (re-run after any /tmp wipe)
 python3 prep_icons.py
-# 2) render (ensure `dot` on PATH, GVBINDIR set to graphviz plugin dir)
-python3 diag_overview.py     # 01-overview.png
-python3 diag_sections.py     # 02..07 *.png
+python3 drilldown/prep_icons2.py
+python3 rebuild_icons.py          # bundled logos + downloads + user logos (best quality, run last)
+
+# 2) render
+python3 overview_builder.py       # 01-overview.{png,svg,drawio}
+python3 drilldown/drilldowns.py   # drilldown/zone-1..7-*.{png,svg,drawio}
 ```
 
-Edit the `cust()`/`Cluster()`/`Edge()` calls to adjust nodes, groups, labels, colors.
-Icons: built-in via `diagrams.onprem.*`; custom logos in `/tmp/icons/png/*.png` (brand-colored simple-icons or text fallback).
+Shared engine: `diagram_render_lib.py` (SVG/PNG/drawio emit, labels on top layer,
+drawio waypoints baked + `flowAnimation=1` on main numbered edges) and
+`corridor_router.py` (margin-rail corridors, gutter routing, obstacle-avoiding
+jogs). Edit node coords / edges in the builder scripts; routing options per edge:
+`corridor="rail-name"`, `via="above|below"` (blocked same-row detours),
+`rail_y=<y>` (explicit lane for cramped zones).
+
+> **Icon prep dependencies:** `rebuild_icons.py` additionally uses the `diagrams`
+> pip package's bundled logo PNGs (auto-located) and downloads brand SVGs from
+> jsDelivr — offline runs fall back to colored text tiles automatically.

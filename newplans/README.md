@@ -14,7 +14,10 @@
 ![Overview](diagrams/icons/01-overview.png)
 
 > Style swimlane + numbered steps (1)→(10) + named artifacts, lấy cảm hứng từ [fullstackdatascience.com/hall-of-fame](https://fullstackdatascience.com/hall-of-fame).
-> ✏️ **Sửa tiếp:** [`diagrams/icons/01-overview.drawio`](diagrams/icons/01-overview.drawio) — mở [draw.io](https://app.diagrams.net) (logo nhúng base64, kéo-thả chỉnh + export PNG/SVG).
+> 🔍 **Xem nét (zoom):** [`diagrams/icons/01-overview.svg`](diagrams/icons/01-overview.svg) — vector, phóng to không vỡ.
+> ✏️ **Sửa tiếp:** [`diagrams/icons/01-overview.drawio`](diagrams/icons/01-overview.drawio) — mở [draw.io](https://app.diagrams.net) (logo nhúng base64, routing giữ nguyên như PNG nhờ waypoints; **mũi tên flow chính (1)→(10) có hiệu ứng chạy** `flowAnimation` khi mở trong draw.io).
+>
+> *Style hall-of-fame: mỗi tool là **card trắng đổ bóng** (icon + tên trong card), bước flow đánh số bằng **badge tròn màu** (1b)→(10), mỗi zone có **dải header màu đậm**, góc đường bo tròn. Layout kiểu mạch điện (corridor): mũi tên dài cross-zone chạy trên **rail dọc 2 bên lề** — rail trái = vòng drift→retrain (đỏ), 3 rail phải = deploy / features / telemetry — đoạn ngang chỉ nằm trong gutter giữa các zone → không đường nào cắt qua lòng zone. Legend góc dưới trái. Re-render: `python3 diagrams/icons/overview_builder.py` (xem `diagrams/icons/REGENERATE.md`).*
 
 | Level | Trả lời câu hỏi | Best-of-breed |
 |---|---|---|
@@ -54,7 +57,7 @@ Thư mục gốc: `diagrams/icons/`
 | Drill-down T0 — Platform | `drilldown/zone-6-platform.drawio` |
 | Drill-down T6 — Observability | `drilldown/zone-7-observability.drawio` |
 
-Vẽ lại hàng loạt (đổi tool/toạ độ): sửa `overview_builder.py` / `drilldown/drilldowns.py` rồi chạy (cần `dot` + `cairosvg`). Spec từng zone: [`diagram-drawing-guide.md`](diagram-drawing-guide.md).
+Vẽ lại hàng loạt (đổi tool/toạ độ): sửa `overview_builder.py` / `drilldown/drilldowns.py` rồi chạy (cần `cairosvg` + icons trong `/tmp/icons/png` — chạy `prep_icons.py`, `drilldown/prep_icons2.py`, `rebuild_icons.py` trước nếu `/tmp` đã bị xoá). Engine routing dùng chung: `diagram_render_lib.py` + `corridor_router.py`. Spec từng zone: [`diagram-drawing-guide.md`](diagram-drawing-guide.md).
 
 ---
 
@@ -103,7 +106,7 @@ Kafka · Schema Registry · Debezium · Kafka Connect · Spark · Flink · MinIO
 
 ## 4. Chi tiết từng phần (drill-down — mỗi zone 1 file draw.io chỉnh tiếp được)
 
-> Mỗi ảnh dưới là **drill-down chi tiết** (namespace containers + numbered steps + named artifacts). Link ✏️ là file `.drawio` editable.
+> Mỗi ảnh dưới là **drill-down chi tiết** (namespace containers + numbered steps + named artifacts), render cùng engine corridor với hình overview (đường tránh node, label nổi trên cùng). Link ✏️ là file `.drawio` editable (waypoints + animation flow chính); mỗi zone cũng có `.svg` cùng tên để zoom nét. Re-render cả 7: `python3 diagrams/icons/drilldown/drilldowns.py`.
 
 ### T1 — Data Pipeline (L2)
 ![Data Pipeline](diagrams/icons/drilldown/zone-1-data.png)
