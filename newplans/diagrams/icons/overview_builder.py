@@ -1,233 +1,201 @@
 #!/usr/bin/env python3
-"""Hand-laid swimlane overview (hall-of-fame style). Emits .drawio (editable) + .png preview.
-Medallion = storage layers (MinIO/Iceberg) with Spark as the transform between them.
-Sources split into batch / stream / cdc."""
-import base64, os, html, cairosvg
+"""Hand-laid swimlane overview, polished hall-of-fame style: full-card nodes
+with shadow, numbered circle badges, zone header bands, rounded elbows.
+Emits 01-overview.{svg,png,drawio} (drawio keeps identical routing via baked
+waypoints; main numbered flow edges carry flowAnimation).
 
-IC = "/tmp/icons/png"
-OUTDIR = "/mnt/data/mlops/Long-project/face-detect-gke/plans/260604-2213-mlops-l2-l3-rag-complete-build/diagrams/icons"
-W, H = 2320, 1420
+Layout contract:
+- zone order is fixed (user decision): Platform / Data / Training / Serving /
+  Drift / RAG / Observability
+- zones span x=120..2080; long cross-zone arrows never cross zone interiors:
+  they run on margin rails (left rail = drift->retrain loop, right rails =
+  deploy / features+metadata / telemetry) and only travel horizontally inside
+  the gutters between zones.
+- full cards are ~116x92: row pitch 116, zone heights sized accordingly."""
+import os
 
-# ---- swimlane zones ----
+from diagram_render_lib import Diagram
+
+OUTDIR = os.path.dirname(os.path.abspath(__file__))
+W, H = 2320, 2300
+
 ZONES = [
- (24,  60, 2272,118, "Platform  ·  IaC + CI/CD (GitOps) + SSO + Mesh + Policy",       "#eef2f7", "#9aa4b2"),
- (24, 192, 2272,360, "Data Pipeline (L2)  ·  Iceberg Lakehouse  (batch + stream + CDC)","#e9f3fe","#7badd6"),
- (24, 566, 2272,176, "Training Pipeline (L3)",                                  "#eef7ee", "#86bf86"),
- (24, 756, 2272,150, "Serving Pipeline (L3)",                                   "#fff3e6", "#e0a86a"),
- (24, 920, 2272,156, "Drift -> Retrain -> Canary Loop  *  (L3 centerpiece)",    "#fdecec", "#d98a8a"),
- (24,1090, 2272,150, "RAG / LLM (L3 · AI Track 4B)",                            "#f3eefb", "#b193d6"),
- (24,1254, 2272,140, "Observability",                                          "#eafaf0", "#86c9a8"),
+ (120,  100, 1960, 140, "Platform  ·  IaC + CI/CD (GitOps) + SSO + Mesh + Policy",         "#eef2f7", "#9aa4b2"),
+ (120,  290, 1960, 498, "Data Pipeline (L2)  ·  Iceberg Lakehouse  (batch + stream + CDC)", "#e9f3fe", "#7badd6"),
+ (120,  838, 1960, 266, "Training Pipeline (L3)",                                           "#eef7ee", "#86bf86"),
+ (120, 1154, 1960, 266, "Serving Pipeline (L3)",                                            "#fff3e6", "#e0a86a"),
+ (120, 1470, 1960, 174, "Drift -> Retrain -> Canary Loop  ★  (L3 centerpiece)",             "#fdecec", "#d98a8a"),
+ (120, 1694, 1960, 266, "RAG / LLM (L3 · AI Track 4B)",                                     "#f3eefb", "#b193d6"),
+ (120, 2010, 1960, 152, "Observability",                                                    "#eafaf0", "#86c9a8"),
 ]
 
-N = {}
-def ni(id,x,y,icon,label): N[id]=(x,y,'i',icon,label)
-def na(id,x,y,fill,label): N[id]=(x,y,'a',fill,label)
+d = Diagram(W, H, "Face-Detect MLOps — System Overview (best-of-breed, numbered data flow)",
+            ZONES, subtitle="L1 done · L2/L3/RAG design — best-of-breed 2026, single GKE cluster",
+            cards=True, badges=True, zone_header=True, corner_r=10)
 
-# ---------------- Platform (row y=120) : IaC + CI + CD + SSO + mesh + policy ----------------
-na("dev",      95,120,"#dfe7f0","Developer")
-ni("github",   225,120,"github","GitHub")
-ni("gha",      360,120,"githubactions","GitHub Actions\nbuild+test")
-ni("fdimage",  490,120,"fdimage","face-detect\nimage")
-ni("registry", 615,120,"docker","Image registry")
-ni("argocd",   745,120,"argocd","ArgoCD\nCD (GitOps)")
-ni("terraform",880,120,"terraform","Terraform\nGKE+GPU")
-ni("ansible", 1010,120,"ansible","Ansible")
-ni("keycloak",1170,120,"keycloak","Keycloak SSO")
-ni("istio",   1320,120,"istio","Istio ambient")
-ni("vault",   1460,120,"vault","Vault + ESO")
-ni("kyverno", 1590,120,"kyverno","Kyverno")
-ni("certmgr", 1710,120,"certmanager","cert-manager")
+# ---- margin corridor rails (outside the zone boxes) ----
+d.rail("retrain",   60)    # left:  drift -> retrain loop (centerpiece)
+d.rail("deploy",   2130)   # right: CD / model deploy
+d.rail("features", 2200)   # right: online features + catalog metadata
+d.rail("telemetry", 2270)  # right: logs / traces / metrics long-haul
 
-# ---------------- Data (y 200..548) ----------------
-# sources (3 sub-rows, left)
-na("wider", 110,300,"#cfe0f3","WIDER FACE\n(batch)")
-na("camera",110,400,"#cfe0f3","Camera / API\n(stream)")
-na("appdb", 110,490,"#cfe0f3","App DB\n(CDC)")
-# ingestion
-ni("debezium",280,490,"debezium","Debezium")
-ni("kafka",  300,400,"kafka","Kafka topics")
-ni("schemareg",380,490,"schemaregistry","Schema Registry")
-ni("flink",  470,400,"flink","Flink validate")
-ni("redis",  570,490,"redis","Feast online")
-# medallion: STORAGE layers with SPARK transforms between
-ni("minio_b",470,300,"minio","MinIO\nBronze (S3)")
-ni("spark1", 650,300,"spark","Spark\ntransform")
-ni("ge1",    650,225,"greatexpectations","GE #1")
-ni("minio_s",830,300,"minio","MinIO\nSilver (S3)")
-ni("spark2",1010,300,"spark","Spark\ntransform")
-ni("ge2",   1010,225,"greatexpectations","GE #2")
-ni("gold", 1190,300,"iceberg","Iceberg\nGold")
-# storage / query / catalog (right)
-ni("lakefs",1010,430,"lakefs","lakeFS\n(versioning)")
-ni("trino", 1190,430,"trino","Trino")
-ni("pg",    1380,430,"postgresql","PostgreSQL DW")
-ni("airflow",650,470,"airflow","Airflow")
-ni("openmeta",1380,300,"openmetadata","OpenMetadata\ncatalog+RBAC")
+# ---------------- Platform (y=185) ----------------
+d.card("dev",       200, 185, "#dfe7f0", "Developer")
+d.icon("github",    348, 185, "github", "GitHub")
+d.icon("gha",       496, 185, "githubactions", "GitHub Actions\nbuild+test")
+d.icon("fdimage",   644, 185, "fdimage", "face-detect\nimage")
+d.icon("registry",  792, 185, "docker", "Image registry")
+d.icon("argocd",    940, 185, "argocd", "ArgoCD\nCD (GitOps)")
+d.icon("terraform",1080, 185, "terraform", "Terraform\nGKE+GPU")
+d.icon("ansible",  1212, 185, "ansible", "Ansible")
+d.icon("keycloak", 1350, 185, "keycloak", "Keycloak SSO")
+d.icon("istio",    1488, 185, "istio", "Istio ambient")
+d.icon("vault",    1620, 185, "vault", "Vault + ESO")
+d.icon("kyverno",  1748, 185, "kyverno", "Kyverno")
+d.icon("certmgr",  1888, 185, "certmanager", "cert-manager")
 
-# ---------------- Training (y=640) ----------------
-ni("notebooks",470,628,"kubeflow","Notebooks")
-ni("feast",   660,640,"feast","Feast offline")
-ni("kubeflow",850,640,"kubeflow","Kubeflow\nPipelines")
-ni("katib",  1040,610,"katib","Katib HPO")
-ni("ray",    1040,672,"ray","Ray train\nGPU / CPU")
-ni("mlflow", 1230,640,"mlflow","MLflow\nregistry")
-ni("onnx",   1420,640,"nvidia","ONNX(CPU)/TensorRT(GPU)")
+# ---------------- Data (rows 380 / 496 / 612 / 728) ----------------
+d.icon("ge1",  645, 380, "greatexpectations", "GE #1")     # offset so drops into Spark stay clear
+d.icon("ge2", 1025, 380, "greatexpectations", "GE #2")
+d.card("wider",  220, 496, "#cfe0f3", "WIDER FACE\n(batch)")
+d.icon("minio_b",  580, 496, "minio", "MinIO\nBronze (S3)")
+d.icon("spark1",   760, 496, "spark", "Spark\ntransform")
+d.icon("minio_s",  940, 496, "minio", "MinIO\nSilver (S3)")
+d.icon("spark2",  1120, 496, "spark", "Spark\ntransform")
+d.icon("gold",    1300, 496, "iceberg", "Iceberg\nGold")
+d.icon("openmeta", 1650, 496, "openmetadata", "OpenMetadata\ncatalog+RBAC")
+d.card("camera", 220, 612, "#cfe0f3", "Camera / API\n(stream)")
+d.icon("kafka",    430, 612, "kafka", "Kafka topics")
+d.icon("flink",    620, 612, "flink", "Flink validate")
+d.icon("redis",    850, 612, "redis", "Feast online")
+d.card("appdb",  220, 728, "#cfe0f3", "App DB\n(CDC)")
+d.icon("debezium", 430, 728, "debezium", "Debezium")
+d.icon("schemareg", 620, 728, "schemaregistry", "Schema Registry")
+d.icon("airflow",  760, 728, "airflow", "Airflow")
+d.icon("lakefs",  1120, 728, "lakefs", "lakeFS\n(versioning)")
+d.icon("trino",   1300, 728, "trino", "Trino")
+d.icon("pg",      1490, 728, "postgresql", "PostgreSQL DW")
 
-# ---------------- Serving (y=830) ----------------
-na("enduser",110,830,"#f2dcc2","End User")
-ni("kserve", 330,830,"kserve","KServe")
-ni("triton", 510,830,"nvidia","Triton (GPU/CPU)")
-ni("keda",   700,800,"keda","KEDA")
-ni("flagger",700,862,"flagger","Flagger canary")
+# ---------------- Training (rows 928 / 1044) ----------------
+d.icon("notebooks", 580, 928, "kubeflow", "Notebooks")
+d.icon("katib",    1150, 928, "katib", "Katib HPO")
+d.icon("feast",     770, 1044, "feast", "Feast offline")
+d.icon("kubeflow",  960, 1044, "kubeflow", "Kubeflow\nPipelines")
+d.icon("ray",      1150, 1044, "ray", "Ray train\nGPU / CPU")
+d.icon("mlflow",   1340, 1044, "mlflow", "MLflow\nregistry")
+d.icon("onnx",     1540, 1044, "nvidia", "ONNX(CPU)/\nTensorRT(GPU)")
 
-# ---------------- Drift (y=998) ----------------
-ni("evidently",330,998,"evidently","Evidently")
-ni("alibi",   520,998,"alibidetect","Alibi Detect")
-ni("prom",    720,998,"prometheus","Prometheus")
-ni("alertmgr",910,998,"alertmanager","Alertmanager")
-ni("argoev", 1100,998,"argo","Argo Events")
+# ---------------- Serving (rows 1244 / 1360) ----------------
+d.card("enduser", 220, 1244, "#f2dcc2", "End User")
+d.icon("kserve",  440, 1244, "kserve", "KServe")
+d.icon("triton",  620, 1244, "nvidia", "Triton\n(GPU/CPU)")
+d.icon("keda",    810, 1244, "keda", "KEDA")
+d.icon("flagger", 810, 1360, "flagger", "Flagger canary")
 
-# ---------------- RAG (y=1165) ----------------
-na("question",110,1165,"#e6dcf3","User question")
-ni("ragflow", 320,1165,"ragflow","RAGFlow")
-ni("qdrant",  500,1135,"qdrant","Qdrant")
-ni("typesense",500,1198,"typesense","Typesense")
-ni("guardrails",690,1165,"guardrails","Guardrails")
-ni("vllm",    870,1165,"vllm","vLLM / Ollama")
-ni("langfuse",1050,1165,"langfuse","Langfuse")
+# ---------------- Drift (row 1560) ----------------
+d.icon("evidently", 440, 1560, "evidently", "Evidently")
+d.icon("alibi",     630, 1560, "alibidetect", "Alibi Detect")
+d.icon("prom",      830, 1560, "prometheus", "Prometheus")
+d.icon("alertmgr", 1020, 1560, "alertmanager", "Alertmanager")
+d.icon("argoev",   1210, 1560, "argo", "Argo Events")
 
-# ---------------- Observability (y=1322) ----------------
-ni("thanos", 330,1322,"thanos","Thanos")
-ni("grafana",510,1322,"grafana","Grafana")
-ni("elk",    700,1322,"elasticsearch","ELK")
-ni("kibana", 880,1322,"elasticsearch","Kibana")
-ni("jaeger",1070,1322,"jaeger","Jaeger + OTel")
+# ---------------- RAG (rows 1784 / 1842 / 1900) ----------------
+d.card("question", 220, 1842, "#e6dcf3", "User question")
+d.icon("ragflow",   430, 1842, "ragflow", "RAGFlow")
+d.icon("qdrant",    610, 1784, "qdrant", "Qdrant")
+d.icon("typesense", 610, 1900, "typesense", "Typesense")
+d.icon("guardrails", 800, 1842, "guardrails", "Guardrails")
+d.icon("vllm",      980, 1842, "vllm", "vLLM / Ollama")
+d.icon("langfuse", 1160, 1842, "langfuse", "Langfuse")
 
-# ---- edges: (src,dst,label,color,dashed) ----
-E = [
- ("dev","github","code","#5b6472",0),("github","gha","push","#5b6472",0),("gha","fdimage","build","#5b6472",0),("fdimage","registry","push image","#5b6472",0),("registry","argocd","image","#5b6472",0),("argocd","kserve","deploy app","#5b6472",1),("terraform","ansible","then","#9aa4b2",1),("ansible","istio","provision GKE+GPU","#9aa4b2",1),
- # data — split flows
- ("wider","minio_b","(1b) batch","#1864ab",0),
- ("camera","kafka","(1s) stream","#1864ab",0),
- ("appdb","debezium","cdc","#1864ab",0),("debezium","kafka","","#1864ab",0),
- ("schemareg","kafka","schema","#9aa4b2",1),
- ("kafka","flink","(2) validate","#1864ab",0),
- ("flink","redis","online feat","#1864ab",1),("flink","minio_b","valid","#1864ab",1),
- # medallion: storage --Spark--> storage
- ("minio_b","spark1","(3) read","#1864ab",0),("spark1","minio_s","write","#1864ab",0),
- ("ge1","minio_s","check","#2b8a3e",1),
- ("minio_s","spark2","read","#1864ab",0),("spark2","gold","(4) write Gold","#1864ab",0),
- ("ge2","gold","check","#2b8a3e",1),
- ("gold","lakefs","version","#9aa4b2",1),("trino","gold","SQL","#1864ab",0),
- ("gold","pg","DW","#1864ab",0),("airflow","spark1","schedule","#9aa4b2",1),
- ("gold","openmeta","lineage","#2b8a3e",1),
- # training
- ("trino","feast","(5) load","#2b8a3e",0),("feast","kubeflow","features","#2b8a3e",0),
- ("notebooks","kubeflow","author","#9aa4b2",1),("kubeflow","katib","HPO","#2b8a3e",0),
- ("kubeflow","ray","train","#2b8a3e",0),("kubeflow","mlflow","(6) register","#2b8a3e",0),
- ("mlflow","onnx","export","#2b8a3e",0),
- # serving
- ("enduser","kserve","(7) request","#b8741a",0),("mlflow","kserve","deploy","#b8741a",1),
- ("kserve","triton","runtime","#b8741a",0),("redis","kserve","features","#b8741a",1),
- ("keda","kserve","scale","#9aa4b2",1),("flagger","kserve","(10) promote","#c92a2a",1),
- # drift
- ("kserve","evidently","(8) predictions","#c92a2a",0),("kserve","alibi","inputs","#c92a2a",1),
- ("evidently","prom","drift_score","#c92a2a",0),("prom","alertmgr","alert","#c92a2a",0),
- ("alertmgr","argoev","webhook","#c92a2a",0),("argoev","kubeflow","(9) retrain","#c92a2a",1),
- # rag
- ("question","ragflow","ask","#7c3aed",0),("ragflow","qdrant","vector","#7c3aed",0),
- ("ragflow","typesense","keyword","#7c3aed",0),("qdrant","guardrails","context","#7c3aed",0),
- ("guardrails","vllm","generate","#7c3aed",0),("vllm","langfuse","trace","#7c3aed",1),
- ("openmeta","qdrant","index","#9aa4b2",1),
- # observability
- ("prom","thanos","store","#059669",0),("thanos","grafana","viz","#059669",0),
- ("elk","kibana","view","#059669",0),("kserve","elk","logs","#059669",1),("kserve","jaeger","traces","#059669",1),
-]
+# ---------------- Observability (row 2100, spread to fill the zone width) ----------------
+d.icon("thanos",  440, 2100, "thanos", "Thanos")
+d.icon("grafana", 700, 2100, "grafana", "Grafana")
+d.icon("elk",    1020, 2100, "elasticsearch", "ELK")
+d.icon("kibana", 1280, 2100, "kibana", "Kibana")
+d.icon("jaeger", 1600, 2100, "jaeger", "Jaeger + OTel")
 
+# ---- edges ----
+GRAY, BLUE, GREEN, ORANGE, RED, PURPLE, TEAL = "#5b6472", "#1864ab", "#2b8a3e", "#b8741a", "#c92a2a", "#7c3aed", "#059669"
+SUPPORT = "#9aa4b2"
 
-KEEP={"(1b) batch","(1s) stream","cdc","(2) validate","(3) read","(4) write Gold","(5) load",
- "(6) register","(7) request","(8) predictions","(9) retrain","(10) promote","drift_score",
- "alert","webhook","vector","keyword","generate","code","push","build","push image","deploy app","provision GKE+GPU"}
-E=[(a,b,(l if l in KEEP else ""),c,d) for a,b,l,c,d in E]
+# platform CI/CD chain
+d.edge("dev", "github", "code", GRAY)
+d.edge("github", "gha", "push", GRAY)
+d.edge("gha", "fdimage", "build", GRAY)
+d.edge("fdimage", "registry", "push image", GRAY)
+d.edge("registry", "argocd", "", GRAY)
+d.edge("argocd", "kserve", "deploy app", GRAY, dashed=True, corridor="deploy")
+d.edge("terraform", "ansible", "", SUPPORT, dashed=True)
+d.edge("ansible", "istio", "provision GKE+GPU", SUPPORT, dashed=True, via="below")
 
-IW, IH = 56, 56
-AW, AH = 124, 54
-def _b64(p): return base64.b64encode(open(p,"rb").read()).decode()
+# data: sources -> ingestion -> medallion
+d.edge("wider", "minio_b", "(1b) batch", BLUE, main=True)
+d.edge("camera", "kafka", "(1s) stream", BLUE, main=True)
+d.edge("appdb", "debezium", "(1c) CDC", BLUE, main=True)
+d.edge("debezium", "kafka", "", BLUE, main=True)
+d.edge("schemareg", "kafka", "", SUPPORT, dashed=True)
+d.edge("kafka", "flink", "(2) validate", BLUE, main=True)
+d.edge("flink", "redis", "", BLUE, dashed=True)
+d.edge("flink", "minio_b", "", BLUE, dashed=True)
+d.edge("minio_b", "spark1", "(3) read", BLUE, main=True)
+d.edge("spark1", "minio_s", "", BLUE, main=True)
+d.edge("minio_s", "spark2", "", BLUE, main=True)
+d.edge("spark2", "gold", "(4) write Gold", BLUE, main=True)
+d.edge("ge1", "minio_s", "", GREEN, dashed=True)
+d.edge("ge2", "gold", "", GREEN, dashed=True)
+d.edge("gold", "lakefs", "", SUPPORT, dashed=True)
+d.edge("trino", "gold", "", BLUE)
+d.edge("gold", "pg", "", BLUE)
+d.edge("airflow", "spark1", "", SUPPORT, dashed=True)
+d.edge("gold", "openmeta", "", GREEN, dashed=True)
 
-def anchors(id):
-    x,y,k,_,_=N[id]; w=IW if k=='i' else AW; h=IH if k=='i' else AH
-    return dict(x=x,y=y,l=(x-w/2,y),r=(x+w/2,y),t=(x,y-h/2),b=(x,y+h/2),w=w,h=h)
+# training
+d.edge("trino", "feast", "(5) load", GREEN, main=True)
+d.edge("feast", "kubeflow", "", GREEN, main=True)
+d.edge("notebooks", "kubeflow", "", SUPPORT, dashed=True, via="above")
+d.edge("kubeflow", "katib", "", GREEN)
+d.edge("kubeflow", "ray", "", GREEN)
+d.edge("kubeflow", "mlflow", "(6) register", GREEN, main=True, via="below")
+d.edge("mlflow", "onnx", "", GREEN, main=True)
 
-def route(s,d):
-    a,b=anchors(s),anchors(d); dx=b['x']-a['x']; dy=b['y']-a['y']
-    if abs(dy)<24:
-        p=[a['r'],b['l']] if dx>=0 else [a['l'],b['r']]
-        mx=(p[0][0]+p[1][0])/2; return [p[0],(mx,p[0][1]),(mx,p[1][1]),p[1]]
-    start=a['b'] if dy>0 else a['t']; end=b['t'] if dy>0 else b['b']
-    midy=(start[1]+end[1])/2
-    return [start,(start[0],midy),(end[0],midy),end]
+# serving
+d.edge("enduser", "kserve", "(7) request", ORANGE, main=True)
+d.edge("mlflow", "kserve", "deploy model", ORANGE, dashed=True)
+d.edge("kserve", "triton", "", ORANGE, main=True)
+d.edge("redis", "kserve", "online features", ORANGE, dashed=True, corridor="features")
+d.edge("keda", "kserve", "scale", SUPPORT, dashed=True, via="above")
+d.edge("flagger", "kserve", "(10) promote", RED, main=True, via="below")
 
-def ZONE_AT(yy):
-    for x,y,w,h,t,fill,st in ZONES:
-        if y<=yy<=y+h: return fill
-    return "#ffffff"
+# drift -> retrain loop
+d.edge("kserve", "evidently", "(8) predictions", RED, main=True)
+d.edge("kserve", "alibi", "", RED, dashed=True)
+d.edge("evidently", "prom", "drift_score", RED, main=True, via="below")
+d.edge("prom", "alertmgr", "alert", RED, main=True)
+d.edge("alertmgr", "argoev", "webhook", RED, main=True)
+d.edge("argoev", "kubeflow", "(9) retrain", RED, main=True, width=3.2, corridor="retrain")
 
-def svg():
-    L=['<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" '
-       f'viewBox="0 0 {W} {H}" font-family="DejaVu Sans, Arial, sans-serif">',
-       f'<rect width="{W}" height="{H}" fill="#ffffff"/>','<defs>']
-    for c in set(e[3] for e in E):
-        L.append(f'<marker id="m{c.replace("#","")}" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="{c}"/></marker>')
-    L.append('</defs>')
-    L.append(f'<text x="{W/2}" y="40" text-anchor="middle" font-size="30" font-weight="700" fill="#1f2937">Face-Detect MLOps — System Overview (best-of-breed, numbered data flow)</text>')
-    for x,y,w,h,t,fill,st in ZONES:
-        L.append(f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="14" fill="{fill}" stroke="{st}" stroke-width="1.4"/>')
-        L.append(f'<text x="{x+16}" y="{y+24}" font-size="16" font-weight="700" fill="#384150">{html.escape(t)}</text>')
-    for s,d,lbl,col,dash in E:
-        pts=route(s,d); da=' stroke-dasharray="5,4"' if dash else ''
-        path=" ".join(f"{x:.0f},{y:.0f}" for x,y in pts)
-        L.append(f'<polyline points="{path}" fill="none" stroke="{col}" stroke-width="1.9"{da} marker-end="url(#m{col.replace("#","")})"/>')
-        if lbl:
-            mx,my=pts[len(pts)//2]; wd=len(lbl)*6.2+8
-            L.append(f'<rect x="{mx-wd/2:.0f}" y="{my-9:.0f}" width="{wd:.0f}" height="15" rx="3" fill="{ZONE_AT(my)}" opacity="0.96"/>')
-            L.append(f'<text x="{mx:.0f}" y="{my+2:.0f}" text-anchor="middle" font-size="10.5" fill="#3a4252">{html.escape(lbl)}</text>')
-    for id,(x,y,k,ic,label) in N.items():
-        if k=='i':
-            L.append(f'<image x="{x-IW/2}" y="{y-IH/2}" width="{IW}" height="{IH}" xlink:href="data:image/png;base64,{_b64(f"{IC}/{ic}.png")}"/>')
-            lines=label.split("\n")
-            for i,ln in enumerate(lines):
-                L.append(f'<text x="{x}" y="{y+IH/2+13+i*12:.0f}" text-anchor="middle" font-size="10.5" font-weight="600" fill="#2b3240">{html.escape(ln)}</text>')
-        else:
-            L.append(f'<rect x="{x-AW/2}" y="{y-AH/2}" width="{AW}" height="{AH}" rx="9" fill="{ic}" stroke="#8a93a3" stroke-width="1.3"/>')
-            lines=label.split("\n"); y0=y-(len(lines)-1)*7
-            for i,ln in enumerate(lines):
-                L.append(f'<text x="{x}" y="{y0+i*14+4:.0f}" text-anchor="middle" font-size="11" font-weight="700" fill="#2b3240">{html.escape(ln)}</text>')
-    L.append('</svg>'); return "\n".join(L)
+# rag
+d.edge("question", "ragflow", "ask", PURPLE, main=True)
+d.edge("ragflow", "qdrant", "vector", PURPLE, main=True)
+d.edge("ragflow", "typesense", "keyword", PURPLE)
+d.edge("qdrant", "guardrails", "", PURPLE, main=True)
+d.edge("guardrails", "vllm", "generate", PURPLE, main=True)
+d.edge("vllm", "langfuse", "", PURPLE, dashed=True)
+d.edge("openmeta", "qdrant", "catalog index", SUPPORT, dashed=True, corridor="features")
 
-svg_str=svg()
-open(f"{OUTDIR}/01-overview.svg","w").write(svg_str)
-cairosvg.svg2png(bytestring=svg_str.encode(),write_to=f"{OUTDIR}/01-overview.png",output_width=2400)
-print("PNG written")
+# observability
+d.edge("prom", "thanos", "store", TEAL, corridor="telemetry")
+d.edge("thanos", "grafana", "", TEAL)
+d.edge("elk", "kibana", "", TEAL)
+d.edge("kserve", "elk", "logs", TEAL, dashed=True, corridor="telemetry")
+d.edge("kserve", "jaeger", "traces", TEAL, dashed=True, corridor="telemetry")
 
-def drawio():
-    cells=['<mxCell id="0"/>','<mxCell id="1" parent="0"/>']; cid=2; ref={}
-    for x,y,w,h,t,fill,st in ZONES:
-        cells.append(f'<mxCell id="z{cid}" value="{html.escape(t)}" style="rounded=1;fillColor={fill};strokeColor={st};verticalAlign=top;align=left;spacingLeft=14;spacingTop=6;fontSize=15;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="{x}" y="{y}" width="{w}" height="{h}" as="geometry"/></mxCell>'); cid+=1
-    for id,(x,y,k,ic,label) in N.items():
-        ref[id]=f"n{cid}"; lbl=html.escape(label.replace(chr(10)," "))
-        if k=='i':
-            style=f"shape=image;verticalLabelPosition=bottom;verticalAlign=top;imageAspect=0;image=data:image/png,{_b64(f'{IC}/{ic}.png')};fontSize=10;"
-            cells.append(f'<mxCell id="{ref[id]}" value="{lbl}" style="{style}" vertex="1" parent="1"><mxGeometry x="{x-IW/2}" y="{y-IH/2}" width="{IW}" height="{IH}" as="geometry"/></mxCell>')
-        else:
-            style=f"rounded=1;fillColor={ic};strokeColor=#8a93a3;fontSize=11;fontStyle=1;whiteSpace=wrap;"
-            cells.append(f'<mxCell id="{ref[id]}" value="{lbl}" style="{style}" vertex="1" parent="1"><mxGeometry x="{x-AW/2}" y="{y-AH/2}" width="{AW}" height="{AH}" as="geometry"/></mxCell>')
-        cid+=1
-    for s,d,lbl,col,dash in E:
-        da="dashed=1;" if dash else ""
-        style=f"edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor={col};{da}fontSize=10;endArrow=block;html=1;"
-        cells.append(f'<mxCell id="e{cid}" value="{html.escape(lbl)}" style="{style}" edge="1" parent="1" source="{ref[s]}" target="{ref[d]}"><mxGeometry relative="1" as="geometry"/></mxCell>'); cid+=1
-    model=f'<mxGraphModel dx="1600" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="{W}" pageHeight="{H}"><root>{"".join(cells)}</root></mxGraphModel>'
-    return f'<mxfile host="app.diagrams.net"><diagram name="Overview" id="overview">{model}</diagram></mxfile>'
+d.legend([
+    ("#1f2937", False, "solid thick = main numbered flow (1)→(10)"),
+    ("#9aa4b2", True,  "dashed = support / control plane"),
+    ("#c92a2a", False, "red = drift → retrain → canary loop ★"),
+], 120, 2190)
 
-open(f"{OUTDIR}/01-overview.drawio","w").write(drawio())
-print("drawio written")
+d.write(f"{OUTDIR}/01-overview", png_width=2400, drawio_name="Overview")
+print("01-overview written")

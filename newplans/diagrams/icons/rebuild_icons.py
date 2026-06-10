@@ -6,8 +6,12 @@ from PIL import Image
 import cairosvg
 
 DST="/tmp/icons/png"; os.makedirs(DST,exist_ok=True)
-RES="/home/longhd/.local/lib/python3.12/site-packages/resources"
-USERD="/mnt/data/mlops/Long-project/face-detect-gke/plans/260604-2213-mlops-l2-l3-rag-complete-build/diagrams/icons"
+try:
+    import resources as _res
+    RES=os.path.dirname(_res.__file__)
+except ImportError:
+    RES=os.path.expanduser("~/.local/lib/python3.12/site-packages/resources")
+USERD="/mnt/data/mlops/Long-project/face-detect-gke/newplans/diagrams/icons"
 
 # 1) bundled full-color logos from diagrams resources
 bundled={"github":"github","argocd":"argocd","istio":"istio","kafka":"kafka","spark":"spark",
@@ -47,8 +51,14 @@ downloads={
  "typesense":(GB.format("typesense"),None),"kyverno":(CNCF.format("kyverno","kyverno"),None),
  "argo":(CNCF.format("argo","argo"),None),"knative":(SI.format("knative"),"#0865AD"),
 }
+def tile(n,c,l):
+    init=l.split()[0][:9]; fs=20 if len(init)<=6 else 15
+    svg=f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><rect x="6" y="6" width="108" height="108" rx="22" fill="{c}"/><text x="60" y="68" font-family="Arial" font-size="{fs}" font-weight="700" fill="#fff" text-anchor="middle">{init}</text></svg>'
+    cairosvg.svg2png(bytestring=svg.encode(),write_to=f"{DST}/{n}.png",output_width=256,output_height=256)
 for k,(u,c) in downloads.items():
-    if not dl(k,u,c): print("DL FAIL (will need fallback):",k)
+    if not dl(k,u,c):
+        print("DL FAIL -> fallback tile:",k)
+        tile(k, c or "#5b6472", k)
 
 # 3) conceptual fallback tiles
 tiles={"gpu":("#76B900","GPU pool"),"kueue":("#326CE5","Kueue"),"approval":("#0E7C66","Approval"),
