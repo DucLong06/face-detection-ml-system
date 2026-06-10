@@ -13,13 +13,57 @@ OUT = os.path.dirname(os.path.abspath(__file__))
 os.makedirs(OUT, exist_ok=True)
 
 
+S = 1.3   # card-style re-space: uniform scale opens room for 116x92 cards
+          # while keeping each zone's relative layout (fonts stay fixed size)
+
+
+def _autofit_zones(zs, whs):
+    """tighten each zone box around the cards whose center lies inside it
+    (top inset clears the 30px header band); then re-expand parents so nested
+    zone boxes stay fully contained. Fixes band/bottom collisions generically."""
+    PAD_T, PAD_B, PAD_X = 46, 20, 18
+    fitted = []
+    for (x, y, w, h, t, f, st) in zs:
+        inside = [(nx, ny, nw, nh) for nx, ny, nw, nh in whs if x < nx < x + w and y < ny < y + h]
+        if not inside:
+            fitted.append([x, y, w, h, t, f, st]); continue
+        l = min(nx - nw / 2 for nx, ny, nw, nh in inside) - PAD_X
+        r = max(nx + nw / 2 for nx, ny, nw, nh in inside) + PAD_X
+        tp = min(ny - nh / 2 for nx, ny, nw, nh in inside) - PAD_T
+        bt = max(ny + nh / 2 for nx, ny, nw, nh in inside) + PAD_B
+        fitted.append([l, tp, r - l, bt - tp, t, f, st])
+    for i, (ox, oy, ow, oh, *_r) in enumerate(zs):       # parent ⊇ child boxes
+        for j, fj in enumerate(fitted):
+            if i == j:
+                continue
+            cx, cy = fj[0] + fj[2] / 2, fj[1] + fj[3] / 2
+            if ox < cx < ox + ow and oy < cy < oy + oh and (zs[j][2] < ow and zs[j][3] < oh):
+                fi = fitted[i]
+                l = min(fi[0], fj[0] - 12); tp = min(fi[1], fj[1] - 46)
+                r = max(fi[0] + fi[2], fj[0] + fj[2] + 12); bt = max(fi[1] + fi[3], fj[1] + fj[3] + 12)
+                fitted[i] = [l, tp, r - l, bt - tp, fi[4], fi[5], fi[6]]
+    return [tuple(z) for z in fitted]
+
+
 def build(outname, title, W, H, Z, N, E):
-    d = Diagram(W, H, title, Z, aw=128)
+    zs = [(x * S, y * S, w * S, h * S, t, f, st) for x, y, w, h, t, f, st in Z]
+    whs = []
     for nid, (x, y, k, ic, lbl) in N.items():
-        (d.icon if k == 'i' else d.card)(nid, x, y, ic, lbl)
+        if k == 'i':
+            w = max(116, max(len(ln) for ln in lbl.split("\n")) * 6.2 + 18)
+            whs.append((x * S, y * S, w, 92))
+        else:
+            whs.append((x * S, y * S, 128, 54))
+    zs = _autofit_zones(zs, whs)
+    d = Diagram(int(W * S), int(H * S), title, zs, aw=128,
+                cards=True, badges=True, zone_header=True, corner_r=10)
+    for nid, (x, y, k, ic, lbl) in N.items():
+        (d.icon if k == 'i' else d.card)(nid, x * S, y * S, ic, lbl)
     for row in E:
         s, t, lbl, col, dash = row[:5]
-        opts = row[5] if len(row) > 5 else {}
+        opts = dict(row[5]) if len(row) > 5 else {}
+        if 'rail_y' in opts:
+            opts['rail_y'] *= S
         d.edge(s, t, lbl, col, dashed=bool(dash), main=lbl.startswith("("), **opts)
     d.write(f"{OUT}/{outname}", png_width=2200, drawio_name=outname)
     print("built", outname)
@@ -132,7 +176,7 @@ ni(N, "argoev", 1330, 330, "argo", "Argo Events")
 ni(N, "kfp", 1560, 330, "kubeflow", "Kubeflow retrain\nfetch Gold→train(Ray)→eval(GE)")
 ni(N, "datapin", 1560, 470, "lakefs", "lakeFS + Iceberg\nsnapshot (reproducible)")
 ni(N, "mlflow", 1560, 200, "mlflow", "MLflow Staging\n(F1>baseline)")
-na(N, "approval", 1300, 140, "#cdeccd", "Human approval\n(gate to Prod)")
+na(N, "approval", 1300, 95, "#cdeccd", "Human approval\n(gate to Prod)")   # above the auto-fitted zone band
 ni(N, "flagger", 760, 520, "flagger", "Flagger canary 5%")
 Z = [(120, 160, 560, 360, "ns: ml-monitoring + monitoring", "#fdecec", "#d98a8a"),
      (1020, 160, 720, 400, "ns: data-orchestration + ml-platform", "#eef0fb", "#7d8fd6")]

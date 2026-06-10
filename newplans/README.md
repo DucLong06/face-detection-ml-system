@@ -106,7 +106,7 @@ Kafka · Schema Registry · Debezium · Kafka Connect · Spark · Flink · MinIO
 
 ## 4. Chi tiết từng phần (drill-down — mỗi zone 1 file draw.io chỉnh tiếp được)
 
-> Mỗi ảnh dưới là **drill-down chi tiết** (namespace containers + numbered steps + named artifacts), render cùng engine corridor với hình overview (đường tránh node, label nổi trên cùng). Link ✏️ là file `.drawio` editable (waypoints + animation flow chính); mỗi zone cũng có `.svg` cùng tên để zoom nét. Re-render cả 7: `python3 diagrams/icons/drilldown/drilldowns.py`.
+> Mỗi ảnh dưới là **drill-down chi tiết** (namespace containers + numbered steps + named artifacts), render cùng engine corridor + **card style** đồng bộ hình overview (card trắng đổ bóng, badge số tròn, header zone dải màu). Link ✏️ là file `.drawio` editable (waypoints + animation flow chính); mỗi zone cũng có `.svg` cùng tên để zoom nét. Re-render cả 7: `python3 diagrams/icons/drilldown/drilldowns.py`.
 
 ### T1 — Data Pipeline (L2)
 ![Data Pipeline](diagrams/icons/drilldown/zone-1-data.png)
