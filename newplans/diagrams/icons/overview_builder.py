@@ -1,119 +1,126 @@
 #!/usr/bin/env python3
-"""Hand-laid swimlane overview, polished hall-of-fame style: full-card nodes
-with shadow, numbered circle badges, zone header bands, rounded elbows.
+"""Hand-laid overview, Gemini-reference column layout: top platform band,
+4 vertical pipeline columns (Processing / ETL & Storage / Training / Drift),
+serving box below the right columns, RAG + Observability bands at the bottom.
 Emits 01-overview.{svg,png,drawio} (drawio keeps identical routing via baked
 waypoints; main numbered flow edges carry flowAnimation).
 
 Layout contract:
-- zone order is fixed (user decision): Platform / Data / Training / Serving /
-  Drift / RAG / Observability
-- zones span x=120..2080; long cross-zone arrows never cross zone interiors:
-  they run on margin rails (left rail = drift->retrain loop, right rails =
-  deploy / features+metadata / telemetry) and only travel horizontally inside
-  the gutters between zones.
-- full cards are ~116x92: row pitch 116, zone heights sized accordingly."""
+- node set and the numbered data flow (1)->(10) are frozen (user decision);
+  only geometry/styling may change between revisions.
+- the 4 columns share one y-range (340..1200) so the router's horizontal
+  gutters stay clean: 310 (below platform), 1245 (below columns), 1690
+  (below serving), 2055 (below RAG).
+- cards are 150x112 with role captions; column rows sit on a 160px pitch so
+  48px inter-row lanes stay free for cross-column runs."""
 import os
 
 from diagram_render_lib import Diagram
 
 OUTDIR = os.path.dirname(os.path.abspath(__file__))
-W, H = 2320, 2300
+W, H = 2500, 2400
 
 ZONES = [
- (120,  100, 1960, 140, "Platform  ·  IaC + CI/CD (GitOps) + SSO + Mesh + Policy",         "#eef2f7", "#9aa4b2"),
- (120,  290, 1960, 498, "Data Pipeline (L2)  ·  Iceberg Lakehouse  (batch + stream + CDC)", "#e9f3fe", "#7badd6"),
- (120,  838, 1960, 266, "Training Pipeline (L3)",                                           "#eef7ee", "#86bf86"),
- (120, 1154, 1960, 266, "Serving Pipeline (L3)",                                            "#fff3e6", "#e0a86a"),
- (120, 1470, 1960, 174, "Drift -> Retrain -> Canary Loop  ★  (L3 centerpiece)",             "#fdecec", "#d98a8a"),
- (120, 1694, 1960, 266, "RAG / LLM (L3 · AI Track 4B)",                                     "#f3eefb", "#b193d6"),
- (120, 2010, 1960, 152, "Observability",                                                    "#eafaf0", "#86c9a8"),
+ (120,  100, 2260, 180, "Central & Support Plane  ·  IaC + CI/CD (GitOps) + SSO + Mesh + Policy", "#eef2f7", "#9aa4b2"),
+ (400,  340,  390, 860, "Processing (L2)",                                   "#e9f3fe", "#7badd6"),
+ (830,  340,  390, 860, "ETL & Storage (L2)",                                "#e9f3fe", "#7badd6"),
+ (1260, 340,  390, 860, "Training Pipeline (L3)",                            "#eef7ee", "#86bf86"),
+ (1690, 340,  220, 860, "Drift Loop ★",                                      "#fdecec", "#d98a8a"),
+ (1260, 1290, 650, 370, "Serving Pipeline (L3)",                             "#fff3e6", "#e0a86a"),
+ (120, 1720, 2260, 300, "RAG / LLM (L3 · AI Track 4B)",                      "#f3eefb", "#b193d6"),
+ (120, 2090, 2260, 180, "Observability",                                     "#eafaf0", "#86c9a8"),
 ]
 
 d = Diagram(W, H, "Face-Detect MLOps — System Overview (best-of-breed, numbered data flow)",
             ZONES, subtitle="L1 done · L2/L3/RAG design — best-of-breed 2026, single GKE cluster",
-            cards=True, badges=True, zone_header=True, corner_r=10)
+            cards=True, badges=True, zone_header=True, corner_r=10,
+            card_h=112, card_icon=56, card_min_w=150, role_caption=True)
 
-# ---- margin corridor rails (outside the zone boxes) ----
-d.rail("retrain",   60)    # left:  drift -> retrain loop (centerpiece)
-d.rail("deploy",   2130)   # right: CD / model deploy
-d.rail("features", 2200)   # right: online features + catalog metadata
-d.rail("telemetry", 2270)  # right: logs / traces / metrics long-haul
+# ---- margin corridor rails ----
+d.rail("deploy",    1990)  # ArgoCD -> KServe vertical run (right of serving box)
+d.rail("telemetry", 2420)  # logs / traces / metrics long-haul to bottom band
 
-# ---------------- Platform (y=185) ----------------
-d.card("dev",       200, 185, "#dfe7f0", "Developer")
-d.icon("github",    348, 185, "github", "GitHub")
-d.icon("gha",       496, 185, "githubactions", "GitHub Actions\nbuild+test")
-d.icon("fdimage",   644, 185, "fdimage", "face-detect\nimage")
-d.icon("registry",  792, 185, "docker", "Image registry")
-d.icon("argocd",    940, 185, "argocd", "ArgoCD\nCD (GitOps)")
-d.icon("terraform",1080, 185, "terraform", "Terraform\nGKE+GPU")
-d.icon("ansible",  1212, 185, "ansible", "Ansible")
-d.icon("keycloak", 1350, 185, "keycloak", "Keycloak SSO")
-d.icon("istio",    1488, 185, "istio", "Istio ambient")
-d.icon("vault",    1620, 185, "vault", "Vault + ESO")
-d.icon("kyverno",  1748, 185, "kyverno", "Kyverno")
-d.icon("certmgr",  1888, 185, "certmanager", "cert-manager")
+# ---------------- Central & Support Plane (y=205) ----------------
+d.card("dev",       230, 205, "#dfe7f0", "Developer")
+d.icon("github",    400, 205, "github", "GitHub")
+d.icon("gha",       570, 205, "githubactions", "GitHub Actions\n(build + test)")
+d.icon("fdimage",   740, 205, "fdimage", "face-detect\n(image)")
+d.icon("registry",  910, 205, "docker", "Image registry")
+d.icon("argocd",   1080, 205, "argocd", "ArgoCD\n(CD · GitOps)")
+d.icon("terraform",1250, 205, "terraform", "Terraform\n(GKE + GPU)")
+d.icon("ansible",  1420, 205, "ansible", "Ansible")
+d.icon("keycloak", 1590, 205, "keycloak", "Keycloak\n(SSO)")
+d.icon("istio",    1760, 205, "istio", "Istio\n(ambient mesh)")
+d.icon("vault",    1930, 205, "vault", "Vault + ESO\n(secrets)")
+d.icon("kyverno",  2100, 205, "kyverno", "Kyverno\n(policy)")
+d.icon("certmgr",  2270, 205, "certmanager", "cert-manager\n(TLS)")
 
-# ---------------- Data (rows 380 / 496 / 612 / 728) ----------------
-d.icon("ge1",  645, 380, "greatexpectations", "GE #1")     # offset so drops into Spark stay clear
-d.icon("ge2", 1025, 380, "greatexpectations", "GE #2")
-d.card("wider",  220, 496, "#cfe0f3", "WIDER FACE\n(batch)")
-d.icon("minio_b",  580, 496, "minio", "MinIO\nBronze (S3)")
-d.icon("spark1",   760, 496, "spark", "Spark\ntransform")
-d.icon("minio_s",  940, 496, "minio", "MinIO\nSilver (S3)")
-d.icon("spark2",  1120, 496, "spark", "Spark\ntransform")
-d.icon("gold",    1300, 496, "iceberg", "Iceberg\nGold")
-d.icon("openmeta", 1650, 496, "openmetadata", "OpenMetadata\ncatalog+RBAC")
-d.card("camera", 220, 612, "#cfe0f3", "Camera / API\n(stream)")
-d.icon("kafka",    430, 612, "kafka", "Kafka topics")
-d.icon("flink",    620, 612, "flink", "Flink validate")
-d.icon("redis",    850, 612, "redis", "Feast online")
-d.card("appdb",  220, 728, "#cfe0f3", "App DB\n(CDC)")
-d.icon("debezium", 430, 728, "debezium", "Debezium")
-d.icon("schemareg", 620, 728, "schemaregistry", "Schema Registry")
-d.icon("airflow",  760, 728, "airflow", "Airflow")
-d.icon("lakefs",  1120, 728, "lakefs", "lakeFS\n(versioning)")
-d.icon("trino",   1300, 728, "trino", "Trino")
-d.icon("pg",      1490, 728, "postgresql", "PostgreSQL DW")
+# ---------------- Sources (left rail, outside zones) ----------------
+d.card("camera", 230,  456, "#cfe0f3", "Camera / API\n(stream)")
+d.card("appdb",  230,  616, "#cfe0f3", "App DB\n(CDC)")
+d.card("wider",  230, 1096, "#cfe0f3", "WIDER FACE\n(batch)")
 
-# ---------------- Training (rows 928 / 1044) ----------------
-d.icon("notebooks", 580, 928, "kubeflow", "Notebooks")
-d.icon("katib",    1150, 928, "katib", "Katib HPO")
-d.icon("feast",     770, 1044, "feast", "Feast offline")
-d.icon("kubeflow",  960, 1044, "kubeflow", "Kubeflow\nPipelines")
-d.icon("ray",      1150, 1044, "ray", "Ray train\nGPU / CPU")
-d.icon("mlflow",   1340, 1044, "mlflow", "MLflow\nregistry")
-d.icon("onnx",     1540, 1044, "nvidia", "ONNX(CPU)/\nTensorRT(GPU)")
+# ---------------- Processing column (rows 456..1096, pitch 160) ----------------
+d.icon("kafka",     505,  456, "kafka", "Kafka\n(topics)")
+d.icon("schemareg", 685,  456, "schemaregistry", "Schema Registry\n(serialization)")
+d.icon("debezium",  505,  616, "debezium", "Debezium\n(CDC)")
+d.icon("flink",     685,  616, "flink", "Flink\n(validate)")
+d.icon("airflow",   505,  776, "airflow", "Airflow\n(orchestration)")
+d.icon("ge1",       685,  776, "greatexpectations", "GE #1\n(data quality)")
+d.icon("redis",     505,  936, "redis", "Feast online\n(Redis)")
+d.icon("minio_b",   595, 1096, "minio", "MinIO Bronze\n(S3 raw)", hl="#fbe3c8")
 
-# ---------------- Serving (rows 1244 / 1360) ----------------
-d.card("enduser", 220, 1244, "#f2dcc2", "End User")
-d.icon("kserve",  440, 1244, "kserve", "KServe")
-d.icon("triton",  620, 1244, "nvidia", "Triton\n(GPU/CPU)")
-d.icon("keda",    810, 1244, "keda", "KEDA")
-d.icon("flagger", 810, 1360, "flagger", "Flagger canary")
+# ---------------- ETL & Storage column ----------------
+d.icon("spark1",    935,  456, "spark", "Spark\n(transform)")
+d.icon("minio_s",   935,  616, "minio", "MinIO Silver\n(S3 refined)", hl="#eceff3")
+d.icon("openmeta", 1115,  616, "openmetadata", "OpenMetadata\n(catalog + RBAC)")
+d.icon("spark2",    935,  776, "spark", "Spark\n(transform)")
+d.icon("ge2",      1115,  776, "greatexpectations", "GE #2\n(data quality)")
+d.icon("gold",      935,  936, "iceberg", "Iceberg Gold\n(lakehouse)", hl="#fdf2cc")
+d.icon("lakefs",   1115,  936, "lakefs", "lakeFS\n(versioning)")
+d.icon("trino",     935, 1096, "trino", "Trino\n(SQL engine)")
+d.icon("pg",       1115, 1096, "postgresql", "PostgreSQL\n(DW)")
 
-# ---------------- Drift (row 1560) ----------------
-d.icon("evidently", 440, 1560, "evidently", "Evidently")
-d.icon("alibi",     630, 1560, "alibidetect", "Alibi Detect")
-d.icon("prom",      830, 1560, "prometheus", "Prometheus")
-d.icon("alertmgr", 1020, 1560, "alertmanager", "Alertmanager")
-d.icon("argoev",   1210, 1560, "argo", "Argo Events")
+# ---------------- Training column ----------------
+d.icon("feast",    1365,  456, "feast", "Feast\n(offline store)")
+d.icon("notebooks",1545,  456, "kubeflow", "Notebooks\n(Jupyter)")
+d.icon("kubeflow", 1365,  616, "kubeflow", "Kubeflow\n(pipelines)")
+d.icon("katib",    1545,  616, "katib", "Katib\n(HPO)")
+d.icon("ray",      1365,  776, "ray", "Ray train\n(GPU / CPU)")
+d.icon("mlflow",   1365,  936, "mlflow", "MLflow\n(registry)")
+d.icon("onnx",     1365, 1096, "nvidia", "ONNX(CPU)/\nTensorRT(GPU)")
 
-# ---------------- RAG (rows 1784 / 1842 / 1900) ----------------
-d.card("question", 220, 1842, "#e6dcf3", "User question")
-d.icon("ragflow",   430, 1842, "ragflow", "RAGFlow")
-d.icon("qdrant",    610, 1784, "qdrant", "Qdrant")
-d.icon("typesense", 610, 1900, "typesense", "Typesense")
-d.icon("guardrails", 800, 1842, "guardrails", "Guardrails")
-d.icon("vllm",      980, 1842, "vllm", "vLLM / Ollama")
-d.icon("langfuse", 1160, 1842, "langfuse", "Langfuse")
+# ---------------- Drift column (loop flows bottom -> top -> training) ----------------
+d.icon("argoev",   1800,  456, "argo", "Argo Events\n(event trigger)")
+d.icon("alertmgr", 1800,  616, "alertmanager", "Alertmanager\n(alerting)")
+d.icon("prom",     1800,  776, "prometheus", "Prometheus\n(metrics)")
+d.icon("alibi",    1800,  936, "alibidetect", "Alibi Detect\n(outliers)")
+d.icon("evidently",1800, 1096, "evidently", "Evidently\n(drift monitor)")
 
-# ---------------- Observability (row 2100, spread to fill the zone width) ----------------
-d.icon("thanos",  440, 2100, "thanos", "Thanos")
-d.icon("grafana", 700, 2100, "grafana", "Grafana")
-d.icon("elk",    1020, 2100, "elasticsearch", "ELK")
-d.icon("kibana", 1280, 2100, "kibana", "Kibana")
-d.icon("jaeger", 1600, 2100, "jaeger", "Jaeger + OTel")
+# ---------------- Serving box (rows 1406 / 1566) ----------------
+d.icon("kserve",   1365, 1406, "kserve", "KServe\n(inference)")
+d.icon("triton",   1545, 1406, "nvidia", "Triton\n(GPU/CPU)")
+d.icon("keda",     1725, 1406, "keda", "KEDA\n(autoscale)")
+# row 2 sits right of kserve so the column under it stays free for the
+# telemetry corridor exits (kserve -> elk / jaeger)
+d.card("enduser",  1545, 1566, "#f2dcc2", "End User")
+d.icon("flagger",  1725, 1566, "flagger", "Flagger\n(canary)")
+
+# ---------------- RAG band (rows 1820 / 1948) ----------------
+d.card("question",  230, 1820, "#e6dcf3", "User question")
+d.icon("ragflow",   430, 1820, "ragflow", "RAGFlow\n(RAG engine)")
+d.icon("qdrant",    640, 1820, "qdrant", "Qdrant\n(vectors)")
+d.icon("typesense", 640, 1948, "typesense", "Typesense\n(keyword)")
+d.icon("guardrails",850, 1820, "guardrails", "Guardrails\n(safety)")
+d.icon("vllm",     1060, 1820, "vllm", "vLLM / Ollama\n(LLM serving)")
+d.icon("langfuse", 1270, 1820, "langfuse", "Langfuse\n(tracing)")
+
+# ---------------- Observability band (row 2195) ----------------
+d.icon("thanos",  440, 2195, "thanos", "Thanos\n(metrics LTS)")
+d.icon("grafana", 700, 2195, "grafana", "Grafana\n(dashboards)")
+d.icon("elk",    1020, 2195, "elasticsearch", "ELK\n(logs)")
+d.icon("kibana", 1280, 2195, "kibana", "Kibana\n(log UI)")
+d.icon("jaeger", 1600, 2195, "jaeger", "Jaeger + OTel\n(traces)")
 
 # ---- edges ----
 GRAY, BLUE, GREEN, ORANGE, RED, PURPLE, TEAL = "#5b6472", "#1864ab", "#2b8a3e", "#b8741a", "#c92a2a", "#7c3aed", "#059669"
@@ -138,7 +145,7 @@ d.edge("schemareg", "kafka", "", SUPPORT, dashed=True)
 d.edge("kafka", "flink", "(2) validate", BLUE, main=True)
 d.edge("flink", "redis", "", BLUE, dashed=True)
 d.edge("flink", "minio_b", "", BLUE, dashed=True)
-d.edge("minio_b", "spark1", "(3) read", BLUE, main=True)
+d.edge("minio_b", "spark1", "(3) read", BLUE, main=True, rail_y=696)
 d.edge("spark1", "minio_s", "", BLUE, main=True)
 d.edge("minio_s", "spark2", "", BLUE, main=True)
 d.edge("spark2", "gold", "(4) write Gold", BLUE, main=True)
@@ -153,36 +160,36 @@ d.edge("gold", "openmeta", "", GREEN, dashed=True)
 # training
 d.edge("trino", "feast", "(5) load", GREEN, main=True)
 d.edge("feast", "kubeflow", "", GREEN, main=True)
-d.edge("notebooks", "kubeflow", "", SUPPORT, dashed=True, via="above")
+d.edge("notebooks", "kubeflow", "", SUPPORT, dashed=True)
 d.edge("kubeflow", "katib", "", GREEN)
 d.edge("kubeflow", "ray", "", GREEN)
-d.edge("kubeflow", "mlflow", "(6) register", GREEN, main=True, via="below")
+d.edge("kubeflow", "mlflow", "(6) register", GREEN, main=True)
 d.edge("mlflow", "onnx", "", GREEN, main=True)
 
 # serving
 d.edge("enduser", "kserve", "(7) request", ORANGE, main=True)
 d.edge("mlflow", "kserve", "deploy model", ORANGE, dashed=True)
 d.edge("kserve", "triton", "", ORANGE, main=True)
-d.edge("redis", "kserve", "online features", ORANGE, dashed=True, corridor="features")
-d.edge("keda", "kserve", "scale", SUPPORT, dashed=True, via="above")
-d.edge("flagger", "kserve", "(10) promote", RED, main=True, via="below")
+d.edge("redis", "kserve", "online features", ORANGE, dashed=True)
+d.edge("keda", "kserve", "scale", SUPPORT, dashed=True, rail_y=1486)
+d.edge("flagger", "kserve", "(10) promote", RED, main=True, rail_y=1486)
 
-# drift -> retrain loop
+# drift -> retrain loop (column flows bottom-up, then a short hop to training)
 d.edge("kserve", "evidently", "(8) predictions", RED, main=True)
 d.edge("kserve", "alibi", "", RED, dashed=True)
-d.edge("evidently", "prom", "drift_score", RED, main=True, via="below")
+d.edge("evidently", "prom", "drift_score", RED, main=True)
 d.edge("prom", "alertmgr", "alert", RED, main=True)
 d.edge("alertmgr", "argoev", "webhook", RED, main=True)
-d.edge("argoev", "kubeflow", "(9) retrain", RED, main=True, width=3.2, corridor="retrain")
+d.edge("argoev", "kubeflow", "(9) retrain", RED, main=True, width=3.2, rail_y=536)
 
 # rag
 d.edge("question", "ragflow", "ask", PURPLE, main=True)
 d.edge("ragflow", "qdrant", "vector", PURPLE, main=True)
-d.edge("ragflow", "typesense", "keyword", PURPLE)
+d.edge("ragflow", "typesense", "keyword", PURPLE, rail_y=1884)
 d.edge("qdrant", "guardrails", "", PURPLE, main=True)
 d.edge("guardrails", "vllm", "generate", PURPLE, main=True)
 d.edge("vllm", "langfuse", "", PURPLE, dashed=True)
-d.edge("openmeta", "qdrant", "catalog index", SUPPORT, dashed=True, corridor="features")
+d.edge("openmeta", "qdrant", "catalog index", SUPPORT, dashed=True)
 
 # observability
 d.edge("prom", "thanos", "store", TEAL, corridor="telemetry")
@@ -195,7 +202,7 @@ d.legend([
     ("#1f2937", False, "solid thick = main numbered flow (1)→(10)"),
     ("#9aa4b2", True,  "dashed = support / control plane"),
     ("#c92a2a", False, "red = drift → retrain → canary loop ★"),
-], 120, 2190)
+], 120, 2290)
 
-d.write(f"{OUTDIR}/01-overview", png_width=2400, drawio_name="Overview")
+d.write(f"{OUTDIR}/01-overview", png_width=2500, drawio_name="Overview")
 print("01-overview written")

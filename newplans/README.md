@@ -13,11 +13,11 @@
 
 ![Overview](diagrams/icons/01-overview.png)
 
-> Style swimlane + numbered steps (1)→(10) + named artifacts, lấy cảm hứng từ [fullstackdatascience.com/hall-of-fame](https://fullstackdatascience.com/hall-of-fame).
+> Layout cột dọc (column-based) + numbered steps (1)→(10) + named artifacts — bố cục theo bản Gemini reference, card style lấy cảm hứng từ [fullstackdatascience.com/hall-of-fame](https://fullstackdatascience.com/hall-of-fame).
 > 🔍 **Xem nét (zoom):** [`diagrams/icons/01-overview.svg`](diagrams/icons/01-overview.svg) — vector, phóng to không vỡ.
 > ✏️ **Sửa tiếp:** [`diagrams/icons/01-overview.drawio`](diagrams/icons/01-overview.drawio) — mở [draw.io](https://app.diagrams.net) (logo nhúng base64, routing giữ nguyên như PNG nhờ waypoints; **mũi tên flow chính (1)→(10) có hiệu ứng chạy** `flowAnimation` khi mở trong draw.io).
 >
-> *Style hall-of-fame: mỗi tool là **card trắng đổ bóng** (icon + tên trong card), bước flow đánh số bằng **badge tròn màu** (1b)→(10), mỗi zone có **dải header màu đậm**, góc đường bo tròn. Layout kiểu mạch điện (corridor): mũi tên dài cross-zone chạy trên **rail dọc 2 bên lề** — rail trái = vòng drift→retrain (đỏ), 3 rail phải = deploy / features / telemetry — đoạn ngang chỉ nằm trong gutter giữa các zone → không đường nào cắt qua lòng zone. Legend góc dưới trái. Re-render: `python3 diagrams/icons/overview_builder.py` (xem `diagrams/icons/REGENERATE.md`).*
+> *Bố cục: band **Central & Support Plane** trên cùng, 4 **cột pipeline dọc** (Processing / ETL & Storage / Training / Drift Loop) đứng cạnh nhau — dữ liệu chảy trái→phải, sources (WIDER FACE / Camera / App DB) tách riêng mép trái — box **Serving Pipeline** nằm dưới 2 cột phải, band RAG + Observability dưới cùng. Mỗi tool là **card trắng đổ bóng 150×112** (icon lớn + tên đậm + caption vai trò), 3 tầng medallion **MinIO Bronze / Silver / Iceberg Gold** được highlight nền màu, bước flow đánh số bằng **badge tròn màu** (1b)→(10), mỗi zone có **dải header màu đậm**. Vòng drift→retrain (đỏ) giờ là cạnh ngắn Drift→Training kề nhau; long-haul chạy trên 2 rail phải (deploy / telemetry) và các gutter ngang giữa zone → không đường nào cắt qua thân card. Legend góc dưới trái. Re-render: `python3 diagrams/icons/overview_builder.py` (xem `diagrams/icons/REGENERATE.md`).*
 
 | Level | Trả lời câu hỏi | Best-of-breed |
 |---|---|---|
@@ -48,7 +48,7 @@ Thư mục gốc: `diagrams/icons/`
 | Sơ đồ | File `.drawio` (đường dẫn) |
 |---|---|
 | **App Architecture** (app-centric, giống hình cũ) | `00-app-architecture.drawio` |
-| **Overview** (tổng quan, swimlane) | `01-overview.drawio` |
+| **Overview** (tổng quan, layout cột) | `01-overview.drawio` |
 | Drill-down T1 — Data Pipeline | `drilldown/zone-1-data.drawio` |
 | Drill-down T2 — Training | `drilldown/zone-2-training.drawio` |
 | Drill-down T3 — Serving | `drilldown/zone-3-serving.drawio` |

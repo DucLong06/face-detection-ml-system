@@ -22,21 +22,28 @@ def _b64(path):
 class Diagram:
     def __init__(self, W, H, title, zones, icon_dir="/tmp/icons/png",
                  iw=56, ih=56, aw=124, ah=54, subtitle="",
-                 cards=False, badges=False, zone_header=False, corner_r=0):
+                 cards=False, badges=False, zone_header=False, corner_r=0,
+                 card_h=92, card_icon=44, card_min_w=116, role_caption=False):
         self.W, self.H, self.title, self.zones = W, H, title, zones
         self.icon_dir, self.iw, self.ih, self.aw, self.ah = icon_dir, iw, ih, aw, ah
         # polished style (opt-in; default off keeps legacy output byte-stable)
         self.subtitle = subtitle
         self.cards, self.badges, self.zone_header, self.corner_r = cards, badges, zone_header, corner_r
-        self.card_h = 92          # icon 44 on top + up to 2 label lines inside
+        # card metrics are parametric so layouts can scale cards up; defaults
+        # keep prior renders (drilldowns) pixel-identical
+        self.card_h, self.card_icon, self.card_min_w = card_h, card_icon, card_min_w
+        self.role_caption = role_caption  # line 1 bold name, lines 2+ gray role
+        self.hl = {}      # id -> fill for highlighted cards (e.g. medallion tiers)
         self.nodes = {}   # id -> (x, y, kind, icon_or_fill, label)
         self.edges = []   # dicts
         self.legend_items, self.legend_pos = [], None
         self._router = None
 
     # ---- authoring API ----
-    def icon(self, nid, x, y, icon, label):
+    def icon(self, nid, x, y, icon, label, hl=None):
         self.nodes[nid] = (x, y, 'i', icon, label)
+        if hl:
+            self.hl[nid] = hl
 
     def card(self, nid, x, y, fill, label):
         """colored actor/source box (End User, data sources...) — distinct from
@@ -63,7 +70,7 @@ class Diagram:
             raise ValueError(f"edge references unknown node id '{nid}'")
         x, y, k, _, label = self.nodes[nid]
         if k == 'i' and self.cards:
-            w = max(116, max(len(ln) for ln in label.split("\n")) * 6.2 + 18)
+            w = max(self.card_min_w, max(len(ln) for ln in label.split("\n")) * 6.2 + 18)
             return (x, y, w, self.card_h)
         return (x, y, self.iw if k == 'i' else self.aw, self.ih if k == 'i' else self.ah)
 
@@ -126,14 +133,24 @@ class Diagram:
             if k == 'i' and self.cards:
                 _, _, cw, ch = self._wh(nid)
                 lines = label.split("\n")
+                fill = self.hl.get(nid, "#ffffff")
+                stroke = darken(self.hl[nid]) if nid in self.hl else "#dfe3ea"
                 L.append(f'<rect x="{x - cw / 2:.0f}" y="{y - ch / 2:.0f}" width="{cw:.0f}" height="{ch}" rx="10" '
-                         f'fill="#ffffff" stroke="#dfe3ea" stroke-width="1" filter="url(#cardshadow)"/>')
-                L.append(f'<image x="{x - 22}" y="{y - ch / 2 + 8:.0f}" width="44" height="44" '
+                         f'fill="{fill}" stroke="{stroke}" stroke-width="1" filter="url(#cardshadow)"/>')
+                isz = self.card_icon
+                # isz // 2 keeps the old int/float emission semantics so legacy
+                # renders (drilldowns) stay byte-identical at the default size
+                L.append(f'<image x="{x - isz // 2}" y="{y - ch / 2 + 8:.0f}" width="{isz}" height="{isz}" '
                          f'xlink:href="data:image/png;base64,{_b64(f"{self.icon_dir}/{ic}.png")}"/>')
-                ty0 = y - ch / 2 + 64 + (6 if len(lines) == 1 else 0)
+                ty0 = y - ch / 2 + isz + 20 + (6 if len(lines) == 1 else 0)
                 for i, ln in enumerate(lines):
-                    L.append(f'<text x="{x}" y="{ty0 + i * 12:.0f}" text-anchor="middle" '
-                             f'font-size="10.5" font-weight="600" fill="#2b3240">{html.escape(ln)}</text>')
+                    if self.role_caption:        # bold name line + gray role caption lines
+                        fs, fw, fc = (11.5, 700, "#1f2937") if i == 0 else (9.5, 500, "#6b7280")
+                        L.append(f'<text x="{x}" y="{ty0 + i * 13:.0f}" text-anchor="middle" '
+                                 f'font-size="{fs}" font-weight="{fw}" fill="{fc}">{html.escape(ln)}</text>')
+                    else:                        # legacy uniform lines (drilldowns)
+                        L.append(f'<text x="{x}" y="{ty0 + i * 12:.0f}" text-anchor="middle" '
+                                 f'font-size="10.5" font-weight="600" fill="#2b3240">{html.escape(ln)}</text>')
             elif k == 'i':
                 L.append(f'<image x="{x - self.iw / 2}" y="{y - self.ih / 2}" width="{self.iw}" height="{self.ih}" '
                          f'xlink:href="data:image/png;base64,{_b64(f"{self.icon_dir}/{ic}.png")}"/>')
@@ -209,9 +226,11 @@ class Diagram:
             lbl = html.escape(label.replace(chr(10), " "))
             if k == 'i' and self.cards:
                 _, _, cw, ch = self._wh(nid)
-                style = (f"rounded=1;fillColor=#ffffff;strokeColor=#dfe3ea;shadow=1;"
+                cfill = self.hl.get(nid, "#ffffff")
+                cstroke = darken(self.hl[nid]) if nid in self.hl else "#dfe3ea"
+                style = (f"rounded=1;fillColor={cfill};strokeColor={cstroke};shadow=1;"
                          f"image=data:image/png,{_b64(f'{self.icon_dir}/{ic}.png')};"
-                         f"imageWidth=44;imageHeight=44;imageAlign=center;imageVerticalAlign=top;"
+                         f"imageWidth={self.card_icon};imageHeight={self.card_icon};imageAlign=center;imageVerticalAlign=top;"
                          f"verticalAlign=bottom;spacingBottom=8;fontSize=10;fontStyle=1;whiteSpace=wrap;")
                 cells.append(f'<mxCell id="{ref[nid]}" value="{lbl}" style="{style}" vertex="1" parent="1">'
                              f'<mxGeometry x="{x - cw / 2:.0f}" y="{y - ch / 2:.0f}" width="{cw:.0f}" height="{ch}" as="geometry"/></mxCell>')
