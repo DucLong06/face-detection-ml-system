@@ -27,6 +27,7 @@ ZONES = [
  (1260, 340,  390, 860, "Training Pipeline (L3)",                            "#eef7ee", "#86bf86"),
  (1690, 340,  220, 860, "Drift Loop ★",                                      "#fdecec", "#d98a8a"),
  (1260, 1290, 650, 370, "Serving Pipeline (L3)",                             "#fff3e6", "#e0a86a"),
+ (120, 1300, 1090, 360, "Security & Backup (support · CI scan/sign · secrets · VPN · DR)", "#fdeef0", "#d99aa8"),
  (120, 1720, 2260, 300, "RAG / LLM (L3 · AI Track 4B)",                      "#f3eefb", "#b193d6"),
  (120, 2090, 2260, 180, "Observability",                                     "#eafaf0", "#86c9a8"),
 ]
@@ -115,6 +116,17 @@ d.icon("guardrails",850, 1820, "guardrails", "Guardrails\n(safety)")
 d.icon("vllm",     1060, 1820, "vllm", "vLLM / Ollama\n(LLM serving)")
 d.icon("langfuse", 1270, 1820, "langfuse", "Langfuse\n(tracing)")
 
+# ---------------- Security & Backup support cluster (rows 1405 / 1545) ----------------
+# placed in the empty lower-left gutter; not part of the frozen numbered flow
+d.icon("trivy",        230, 1405, "trivy", "Trivy\n(CI image scan)")
+d.icon("cosign",       410, 1405, "cosign", "cosign\n(image sign)")
+d.icon("sealedsec",    590, 1405, "sealedsecrets", "Sealed Secrets\n(git secrets)")
+d.icon("velero",       770, 1405, "velero", "Velero\n(backup / DR)")
+d.icon("tailscale",    950, 1405, "tailscale", "Tailscale\n(admin VPN)")
+d.icon("kyverno_v",    410, 1545, "kyverno", "Kyverno verify\n(sig + policy)")
+d.card("etcdenc",      590, 1545, "#f6d3d8", "etcd\nencryption")
+d.card("ghcr",         230, 1545, "#d7e8f3", "GHCR\n(signed images)")
+
 # ---------------- Observability band (row 2195) ----------------
 d.icon("thanos",  440, 2195, "thanos", "Thanos\n(metrics LTS)")
 d.icon("grafana", 700, 2195, "grafana", "Grafana\n(dashboards)")
@@ -197,6 +209,12 @@ d.edge("thanos", "grafana", "", TEAL)
 d.edge("elk", "kibana", "", TEAL)
 d.edge("kserve", "elk", "logs", TEAL, dashed=True, corridor="telemetry")
 d.edge("kserve", "jaeger", "traces", TEAL, dashed=True, corridor="telemetry")
+
+# security & backup support flow (self-contained, short edges)
+d.edge("trivy", "cosign", "scan→sign", SUPPORT, dashed=True)
+d.edge("cosign", "ghcr", "", SUPPORT, dashed=True)
+d.edge("ghcr", "kyverno_v", "verify", SUPPORT, dashed=True)
+d.edge("velero", "etcdenc", "", SUPPORT, dashed=True)
 
 d.legend([
     ("#1f2937", False, "solid thick = main numbered flow (1)→(10)"),

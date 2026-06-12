@@ -197,6 +197,33 @@ Kafka · Schema Registry · Debezium · Kafka Connect · Spark · Flink · MinIO
 
 ---
 
+## 4b. Sơ đồ vận hành (ops — quyết định 260612)
+
+> 3 sơ đồ mới phản ánh review 260612 (CI/CD + security red-team + RAM reality-check — [report](../plans/reports/brainstorm-review-260612-1453-cicd-security-redteam-plan-review-report.md)). **8 sơ đồ kiến trúc trên KHÔNG đổi** — các quyết định này là vận hành/triển khai, không đổi tool/namespace/data-flow.
+> Source `.mmd` (Mermaid, editable) cạnh PNG/SVG. Re-render: `npx -y -p @mermaid-js/mermaid-cli mmdc -i <file>.mmd -o <file>.png -p puppeteer-config.json -b white -s 2.5` (puppeteer-config.json = `{"args":["--no-sandbox"]}`).
+
+### Ops-1 — Resource Budget & On/Off + Node Topology
+![Resource on/off](diagrams/ops/op1-resource-node-onoff.png)
+
+> **Quy tắc vàng:** ALWAYS-ON (~12-20GB, node nhỏ ổn định) + tối đa **1 nhóm ON-DEMAND** tại một thời điểm (TRAIN ~16-30GB trên node-dev 40GB burst · DATA-HEAVY ~25-40GB · RAG ~10-18GB). Không bao giờ 3 nhóm cùng lúc — full 50-tool ~200GB+ > hardware ~80-120GB.
+
+### Ops-2 — Security Exposure Boundary (public vs private)
+![Security boundary](diagrams/ops/op2-security-exposure-boundary.png)
+
+> **CHỈ** serving + Keycloak ra public ingress (kèm gate F2/F3). Mọi admin UI (ArgoCD/Kubeflow/Grafana/Kibana/MLflow/OpenMetadata) → VPN/Tailscale. Baseline Kyverno: default-deny + mTLS STRICT + etcd encryption + model phải sign.
+
+### Ops-3 — CI/CD GitOps round-trip (monorepo · GitHub-hosted runner · ArgoCD pull)
+![CI/CD roundtrip](diagrams/ops/op3-cicd-gitops-roundtrip.png)
+
+> Repo public → runner cloud free → Trivy + cosign → GHCR → bot bump tag (path-filter + `[skip ci]` chống loop) → ArgoCD **pull** (outbound-only) → Kyverno verify signature → deploy. **Không 1 cổng inbound nào cho CI/CD.**
+
+### Ops-4 — Day-by-Day Roadmap (critical path vs độc lập + nhóm RAM)
+![Day roadmap](diagrams/ops/op4-day-dependency-roadmap.png)
+
+> 🟢 độc lập (D1/D2/D3/RAG) · 🔴 critical path · 🟡 gần độc lập · 🟣 milestone (D4 L1-GitOps, D13-14 drift loop). Lịch chi tiết + test case từng ngày: [`plans/260611-.../day-by-day-setup-schedule.md`](../plans/260611-0000-monorepo-gitops-implementation/day-by-day-setup-schedule.md).
+
+---
+
 ## 5. SSO + RBAC theo role (xuyên suốt)
 
 1 IdP **Keycloak** → mọi tool nhận role qua OIDC:

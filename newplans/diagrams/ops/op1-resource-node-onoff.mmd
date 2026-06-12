@@ -1,0 +1,67 @@
+---
+title: "Resource Budget & On/Off Schedule + Node Topology (260612)"
+---
+flowchart TB
+  classDef always fill:#16a34a,stroke:#14532d,color:#fff,stroke-width:2px
+  classDef train fill:#2563eb,stroke:#1e3a8a,color:#fff,stroke-width:2px
+  classDef data fill:#d97706,stroke:#7c2d12,color:#fff,stroke-width:2px
+  classDef rag fill:#7c3aed,stroke:#4c1d95,color:#fff,stroke-width:2px
+  classDef eph fill:#64748b,stroke:#1e293b,color:#fff,stroke-dasharray:4 3
+  classDef node fill:#f1f5f9,stroke:#334155,color:#0f172a,stroke-width:2px
+  classDef rule fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d,stroke-width:2px
+
+  subgraph NODES["🖥️ Physical nodes (lab, no GPU)"]
+    direction LR
+    CP["node-cp<br/><b>8-16GB · ổn định</b><br/>control-plane + ALWAYS-ON<br/>(24/7)"]:::node
+    W1["node-w1 · 8-16GB"]:::node
+    W2["node-w2 · 8-16GB"]:::node
+    W3["node-w3 · 8-16GB"]:::node
+    DEV["node-dev<br/><b>40GB / 12c — máy DEV</b><br/>BURST only · cordon khi rảnh<br/>KHÔNG làm control-plane"]:::node
+  end
+
+  subgraph AO["🟢 ALWAYS-ON  ~12-20GB  (24/7, trên node-cp/w*)"]
+    direction LR
+    AO1["k3s control · ArgoCD · Istio ambient"]:::always
+    AO2["cert-manager · Kyverno · sealed-secrets"]:::always
+    AO3["Keycloak · OAuth2-Proxy"]:::always
+    AO4["Prometheus + Grafana-lite (Loki)"]:::always
+    AO5["app serving: FastAPI / Triton-ONNX-CPU<br/>+ KServe/Knative control"]:::always
+  end
+
+  subgraph TR["🔵 ON-DEMAND: TRAIN  ~16-30GB  → ưu tiên node-dev (40GB)"]
+    direction LR
+    TR1["Kubeflow FULL"]:::train
+    TR2["Ray / KubeRay"]:::train
+    TR3["train/retrain job<br/>(YOLOv11, ít epoch CPU)"]:::train
+  end
+
+  subgraph DA["🟠 ON-DEMAND: DATA-HEAVY  ~25-40GB"]
+    direction LR
+    DA1["Kafka 1-broker (Strimzi)"]:::data
+    DA2["Flink"]:::data
+    DA3["Trino"]:::data
+    DA4["OpenMetadata (+ES)"]:::data
+  end
+
+  subgraph RG["🟣 ON-DEMAND: RAG  ~10-18GB"]
+    direction LR
+    RG1["Ollama (CPU GGUF)"]:::rag
+    RG2["Qdrant · Typesense"]:::rag
+    RG3["RAGFlow · NeMo Guardrails"]:::rag
+    RG4["Langfuse (+ClickHouse)"]:::rag
+  end
+
+  EPH["⚙️ EPHEMERAL (job tự sinh-hủy): Spark · Great Expectations · Evidently CronJob · retrain job"]:::eph
+
+  RULE["⛔ QUY TẮC VÀNG<br/><b>ALWAYS-ON + tối đa 1 nhóm ON-DEMAND tại một thời điểm</b><br/>KHÔNG bao giờ TRAIN + DATA-HEAVY + RAG cùng lúc<br/>(full 50-tool ~200GB+ &gt; ~80-120GB hardware)"]:::rule
+
+  CP --> AO
+  DEV -. "burst khi train" .-> TR
+  W1 --- W2 --- W3
+  AO -.->|"tắt nhóm này trước khi bật nhóm khác"| TR
+  TR -.-> DA
+  DA -.-> RG
+  RULE -.-> TR
+  RULE -.-> DA
+  RULE -.-> RG
+  AO --- EPH
