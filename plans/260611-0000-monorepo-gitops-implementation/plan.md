@@ -12,6 +12,7 @@ supersedes: [260420-1055-consolidated-plans-drawio]
 
 ## Context Links
 - Brainstorm (approved design): [`../reports/brainstorm-260611-0000-monorepo-gitops-implementation-kickoff-report.md`](../reports/brainstorm-260611-0000-monorepo-gitops-implementation-kickoff-report.md)
+- **Review 260612 (CI/CD + security red-team + RAM reality-check):** [`../reports/brainstorm-review-260612-1453-cicd-security-redteam-plan-review-report.md`](../reports/brainstorm-review-260612-1453-cicd-security-redteam-plan-review-report.md) → nguồn của Validation Session 2 + 2 section "Resource Budget" & "Security Baseline" dưới.
 - Master roadmap (stack T0-T6, reference): [`../260604-2213-mlops-l2-l3-rag-complete-build/plan.md`](../260604-2213-mlops-l2-l3-rag-complete-build/plan.md)
 - Per-tool steps CPU-first (reference): `newplans/implementation-steps.md` + `newplans/phase-t0..t6-*.md`
 - Diagram engine: `newplans/diagrams/icons/` (corridor + card style, completed 260610)
@@ -43,6 +44,9 @@ face-detect-gke/
 
 ## Wiring (CI/CD chuẩn GitOps)
 `push apps/**` → GHA: pytest → build → push registry → bot bump image tag vào `charts/face-detect/values-*.yaml` → ArgoCD auto-sync → ns `model-serving`. Platform: sửa `gitops/platform/**` → ArgoCD sync. `clusters/k3s/bootstrap.sh` = ArgoCD + root app trên cluster k3s lab (cluster provision = `clusters/k3s/install-*.sh` per server) → tất cả tự kéo.
+
+## Day-by-Day Schedule (260612)
+**Lịch setup theo ngày + test case + độc lập/phụ thuộc:** [`day-by-day-setup-schedule.md`](day-by-day-setup-schedule.md) (18 ngày làm việc, ~3.5-4 tuần; milestone D4 L1-GitOps + D14 drift loop ★). Sơ đồ roadmap: `newplans/diagrams/ops/op4-day-dependency-roadmap.png`.
 
 ## Execution Mode (260611)
 **USER TỰ TAY LÀM để học** — Claude chỉ lên kế hoạch + guide từng bước có test. Guides chi tiết (lệnh + ✅TEST + expected output + 🔥troubleshoot) trong `guides/`:
@@ -96,3 +100,43 @@ face-detect-gke/
 
 ### Red-team adjudication (260611 — phase 1 DONE)
 Gói A (23 fix) áp toàn bộ; B1 **k3s lab 7+ server thay kind**; B2 KF-minus-serving + Istio-by-KF; B3 KServe-native canary; B4 giữ Iter8 shadow-only; B5 bootstrap 2-input + seed-data; B6 trigger rule; B7 Langfuse v3+ClickHouse; B8 resolved-by-B1. Chi tiết: `reports/from-red-team-to-user-architecture-findings-adjudication-report.md`. Diagrams: không cần sửa nội dung → Phase 2 completed.
+
+### Session 2 (260612 — CI/CD + security red-team + RAM reality-check)
+| # | Topic | Decision |
+|---|---|---|
+| 1 | CI runner | **GitHub-hosted runner** (repo public → free), KHÔNG self-hosted, KHÔNG GitLab-local. CI build nhẹ; "nhiều server" để cho cluster workloads, không phải CI. |
+| 2 | Repo layout | **GIỮ monorepo** (override khuyến nghị tách config-repo). Chống loop CI↔commit = **path-filter + `[skip ci]`** trên commit bump-tag; an toàn fork-PR = **require-approval cho outside collaborator + KHÔNG secret ở PR-triggered workflow**. |
+| 3 | Hardware (reconcile frontmatter) | Thực: **1 node 40GB/12core = máy DEV (intermittent, KHÔNG control-plane)** + **4-5 node 8-16GB** always-on. Always-on usable ~32-80GB; 40GB chỉ dùng burst (train). |
+| 4 | Kubeflow FULL | **GIỮ** (user re-confirm) — chỉ chạy khi tắt nhóm on-demand khác (xem Resource Budget). |
+| 5 | Stack scope | **Giữ full-design**, dựng từng phần **tắt-bật** theo RAM-budget. |
+| 6 | Supply-chain (repo public) | CI thêm **Trivy scan + cosign sign**; ArgoCD/Kyverno **verify signature** trước deploy. |
+| 7 | Bitnami charts | Verify nguồn/tag trước install — **Bitnami Secure Images 2025** đã deprecate nhiều `docker.io/bitnami/*` → có thể vỡ. Fallback: chart upstream chính chủ. |
+| 8 | Backup/DR | Thêm **Velero + volume snapshot** cho MinIO/Postgres/lakeFS/ES (homelab hỏng ổ = mất data). |
+
+## Resource Budget & On/Off Schedule (260612 — first-class)
+> Sơ đồ: `newplans/diagrams/ops/op1-resource-node-onoff.png` (node topology + 4 nhóm on/off).
+> Full 50-tool cần 200GB+; hardware ~80-120GB heterogeneous (40GB là dev-box burst). **Quy tắc vàng: ALWAYS-ON + tối đa 1 nhóm ON-DEMAND tại một thời điểm. KHÔNG bao giờ TRAIN + DATA-HEAVY + RAG cùng lúc.**
+
+| Nhóm | Thành phần | RAM ~ | Khi nào bật |
+|---|---|---|---|
+| **ALWAYS-ON (24/7)** | k3s control + ArgoCD + Istio ambient + cert-manager + Kyverno + sealed-secrets + Keycloak + OAuth2-Proxy + Prometheus/Grafana-lite (Loki) + app serving (FastAPI/Triton-ONNX-CPU) + KServe/Knative control | **~12-20GB** | luôn (chạy trên node nhỏ ổn định, KHÔNG trên 40GB dev) |
+| **ON-DEMAND: TRAIN** | Kubeflow FULL / Ray / train job | **~16-30GB** | chỉ khi train → ưu tiên schedule lên **node 40GB (cordon/uncordon)**, tắt sau |
+| **ON-DEMAND: DATA-HEAVY** | Kafka(1-broker)+Flink+Trino+OpenMetadata(+ES) | **~25-40GB** | chỉ khi làm data eng (Phase 7 phần nặng), tear-down sau |
+| **ON-DEMAND: RAG** | Ollama + Qdrant + Typesense + RAGFlow + NeMo + Langfuse(+ClickHouse) | **~10-18GB** | chỉ khi demo RAG (Phase 12), tắt sau |
+| **EPHEMERAL** | Spark/GE/Evidently CronJob, retrain job | burst | tự sinh-hủy theo job |
+
+**Hệ quả per-phase:** P6-P11 build & verify **tuần tự, tắt nhóm trước khi bật nhóm sau**; P7 nặng (Kafka/Trino/OpenMetadata) chỉ bật khi demo data, không để chạy nền cùng TRAIN/RAG. Mỗi JIT-guide (phase 6-12) **phải mở đầu bằng "RAM cần + nhóm phải tắt trước"**.
+
+## Security Baseline (front-loaded — KHÔNG để phase cuối)
+> Sơ đồ: `newplans/diagrams/ops/op2-security-exposure-boundary.png` (zone public/private + gates) · `newplans/diagrams/ops/op3-cicd-gitops-roundtrip.png` (CI/CD supply-chain).
+> Public ingress thật → bề mặt tấn công lớn. Các gate dưới phải có TỪ phase tương ứng, không bolt-on.
+
+| Gate | Nội dung | Phase |
+|---|---|---|
+| **F1 admin UI không public** | CHỈ `serving` + `Keycloak` ra public ingress. ArgoCD/Kubeflow/Grafana/Kibana/MLflow/Airflow/OpenMetadata → sau **VPN/Tailscale** hoặc OAuth2-Proxy gate. ArgoCD pin **≥3.1.2** (CVE-2025-55190/23216/55191; token built-in không hết hạn → rotate/disable admin). | P5/P6 |
+| **F2 KServe endpoint** | mặc định public-không-bảo-vệ → **AuthorizationPolicy allow-list + RequestAuthentication OIDC + mTLS STRICT + rate-limit**; KEDA cap max-replica (chống DoS nuốt RAM). | P9 |
+| **F3 Keycloak** | redirect_uri khai báo **chính xác, cấm wildcard** (CVE-2026-3872 path-traversal bypass); admin console **không public**; bật brute-force detection; tách admin realm. | P6 |
+| **F4 secret at-rest** | bật **etcd encryption-at-rest từ P5** (đừng đợi Vault ở vòng harden); sealed-secrets cho git. | P5 |
+| **F6 governance trước workload** | Kyverno ClusterPolicy (NetworkPolicy default-deny + mTLS STRICT + quota + labels) áp **P6 — TRƯỚC** khi mở T1-T5. | P6 |
+| **F7 model provenance** | chỉ load model **đã sign** từ registry nội bộ (MLflow/Triton pickle = RCE vector); không pull model ngoài tùy tiện. | P8/P9 |
+| **F5 CI supply-chain** | Trivy scan + cosign sign image; require-approval fork-PR; không secret ở PR workflow (repo public). | P4 |
