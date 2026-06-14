@@ -1,0 +1,37 @@
+---
+title: "CI/CD GitOps round-trip — monorepo, GitHub-hosted runner, ArgoCD pull (260612)"
+---
+flowchart LR
+  classDef cloud fill:#1e293b,stroke:#0f172a,color:#fff,stroke-width:2px
+  classDef ci fill:#2563eb,stroke:#1e3a8a,color:#fff,stroke-width:2px
+  classDef reg fill:#0891b2,stroke:#155e75,color:#fff,stroke-width:2px
+  classDef cluster fill:#16a34a,stroke:#14532d,color:#fff,stroke-width:2px
+  classDef gate fill:#fde68a,stroke:#b45309,color:#7c2d12,stroke-width:2px
+  classDef note fill:#ecfeff,stroke:#0e7490,color:#155e75
+
+  DEV["Dev → push<br/>monorepo (public)"]:::cloud
+
+  subgraph GH["☁️ GitHub (cloud, outbound chỉ)"]
+    direction TB
+    RUN["GitHub-hosted runner (free, public repo)<br/>1) pytest  2) <b>F5</b> Trivy scan<br/>3) docker build  4) <b>cosign sign</b>"]:::ci
+    BUMP["bot bump image tag → charts/values-*.yaml<br/>path-filter + <b>[skip ci]</b> (chống loop CI↔commit)"]:::ci
+    GHCR["GHCR registry (image đã sign)"]:::reg
+  end
+
+  subgraph LAB["🏠 k3s lab (no public inbound cho CI/CD)"]
+    direction TB
+    ARGO["ArgoCD (in-cluster) — <b>PULL</b>, outbound-only<br/>auto-sync khi git đổi"]:::cluster
+    KYV["Kyverno: <b>F7</b> verify cosign signature trước admit"]:::gate
+    SVC["ns model-serving<br/>kubelet pull image (signed) từ GHCR"]:::cluster
+  end
+
+  NO["🔐 Không 1 cổng inbound nào cho CI/CD<br/>(chỉ serving+Keycloak qua public ingress — xem op2)"]:::note
+
+  DEV --> RUN
+  RUN --> GHCR
+  RUN --> BUMP
+  BUMP -->|"git commit (config trong monorepo)"| ARGO
+  GHCR -->|"kubelet pull"| SVC
+  ARGO --> KYV --> SVC
+  ARGO -. "outbound watch git" .-> GH
+  LAB --- NO

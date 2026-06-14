@@ -1,0 +1,41 @@
+---
+title: "Day-by-Day Roadmap — critical path vs independent + RAM groups (260612)"
+---
+flowchart LR
+  classDef crit fill:#dc2626,stroke:#7f1d1d,color:#fff,stroke-width:2px
+  classDef indep fill:#16a34a,stroke:#14532d,color:#fff,stroke-width:2px
+  classDef semi fill:#d97706,stroke:#7c2d12,color:#fff,stroke-width:2px
+  classDef done fill:#94a3b8,stroke:#475569,color:#fff,stroke-width:1px
+  classDef milestone fill:#7c3aed,stroke:#4c1d95,color:#fff,stroke-width:3px
+
+  P12["✓ P1-2 done<br/>red-team + diagrams"]:::done
+
+  D1["D1 · restructure<br/>🟢 độc lập · RAM~0"]:::indep
+  D2["D2 · CI GHA+Trivy+cosign<br/>🟢 cloud · RAM~0"]:::indep
+  D3["D3 · k3s cluster<br/>🟢 ĐỘC LẬP · ALWAYS-ON"]:::indep
+  D4["D4 · ArgoCD + L1 GitOps ★<br/>🔴 milestone"]:::milestone
+  D5["D5 · mesh+TLS+secrets<br/>🔴 ALWAYS-ON"]:::crit
+  D6["D6 · Kyverno+VPN+etcd-enc<br/>🔴 F4/F6 ALWAYS-ON"]:::crit
+  D7["D7 · Keycloak SSO<br/>🟡 F3 (∥ D6)"]:::semi
+  D8["D8-9 · Data pipeline<br/>🔴 DATA-HEAVY"]:::crit
+  D10["D10-11 · ML train YOLO→ONNX<br/>🔴 TRAIN (tắt DATA)"]:::crit
+  D12["D12 · Serving KServe+canary<br/>🔴 F2 ALWAYS-ON"]:::crit
+  D13["D13-14 · Drift loop ★<br/>🔴 TRAIN burst"]:::milestone
+  D15["D15 · Observability ELK/Jaeger<br/>🟡 kéo sớm được"]:::semi
+  D16["D16-17 · RAG<br/>🟢 ĐỘC LẬP · RAG group"]:::indep
+  D18["D18 · Streaming/CDC ext<br/>🟡 DATA-HEAVY · làm cuối"]:::semi
+
+  P12 --> D1 --> D2 --> D4
+  D3 --> D4
+  D4 --> D5 --> D6 --> D8
+  D5 --> D7 --> D8
+  D8 --> D10 --> D12 --> D13
+  D6 -.->|"kéo sớm (Prometheus cần cho D13)"| D15
+  D7 -.->|"độc lập, nhảy lên làm sớm được"| D16
+  D8 -.->|"mở rộng cuối"| D18
+  D10 -.->|"retrain dùng pipeline D11"| D13
+
+  RULE["⛔ RAM: ALWAYS-ON + tối đa 1 nhóm ON-DEMAND<br/>DATA-HEAVY ⊕ TRAIN ⊕ RAG — không đồng thời"]:::crit
+  RULE -.-> D8
+  RULE -.-> D10
+  RULE -.-> D16

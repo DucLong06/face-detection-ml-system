@@ -1,0 +1,47 @@
+---
+title: "Security Exposure Boundary — public vs private (260612)"
+---
+flowchart TB
+  classDef pub fill:#16a34a,stroke:#14532d,color:#fff,stroke-width:2px
+  classDef priv fill:#475569,stroke:#0f172a,color:#fff,stroke-width:2px
+  classDef gate fill:#fde68a,stroke:#b45309,color:#7c2d12,stroke-width:2px
+  classDef danger fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d,stroke-width:2px
+  classDef net fill:#e0f2fe,stroke:#0369a1,color:#075985,stroke-width:2px
+
+  USER["🌐 End user (Internet)"]:::net
+  ADMIN["👤 Operator (bạn)"]:::net
+
+  subgraph EDGE["Public IP + Istio ingress gateway"]
+    GW["Istio gateway<br/>mTLS STRICT · TLS cert-manager"]:::gate
+  end
+
+  subgraph PUBLIC["🟢 PUBLIC ZONE — CHỈ 2 thứ được ra internet"]
+    direction LR
+    SVC["face-detect serving (KServe)<br/><b>F2:</b> AuthorizationPolicy allow-list<br/>+ RequestAuthentication OIDC<br/>+ rate-limit · KEDA cap max-replica"]:::pub
+    KC["Keycloak (login)<br/><b>F3:</b> redirect_uri CHÍNH XÁC, cấm wildcard<br/>brute-force detection · admin console KHÔNG public"]:::pub
+  end
+
+  subgraph PRIVATE["🔒 PRIVATE ZONE — chỉ qua VPN / Tailscale (KHÔNG public — F1)"]
+    direction LR
+    P1["ArgoCD UI<br/>pin ≥3.1.2 · rotate admin token"]:::priv
+    P2["Kubeflow · MLflow · Airflow"]:::priv
+    P3["Grafana · Kibana"]:::priv
+    P4["OpenMetadata · Trino UI"]:::priv
+  end
+
+  subgraph BASE["Cluster-wide baseline (Kyverno-enforced)"]
+    direction LR
+    B1["<b>F6:</b> NetworkPolicy default-deny<br/>+ Istio mTLS STRICT mọi ns"]:::gate
+    B2["<b>F4:</b> etcd encryption-at-rest từ P5<br/>+ sealed-secrets (Vault vòng harden)"]:::gate
+    B3["<b>F7:</b> chỉ load model ĐÃ SIGN (cosign)<br/>MLflow/Triton pickle = RCE vector"]:::gate
+  end
+
+  DANGER["❌ TUYỆT ĐỐI KHÔNG để admin UI trên public ingress<br/>(ArgoCD ≈ cluster-admin; token built-in không hết hạn)"]:::danger
+
+  USER -->|"HTTPS"| GW
+  GW --> SVC
+  GW --> KC
+  ADMIN -->|"WireGuard / Tailscale (private)"| PRIVATE
+  SVC -.->|"OIDC verify"| KC
+  P1 -.-> BASE
+  PRIVATE --- DANGER
