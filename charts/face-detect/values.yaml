@@ -1,0 +1,13 @@
+image:
+  repository: longhd06/face-detection
+  tag: "latest"
+  pullPolicy: Always
+
+service:
+  type: LoadBalancer
+  targetPort: 8000
+  port: 8000
+
+ingress:
+  enabled: true
+  host: face-detection.local
