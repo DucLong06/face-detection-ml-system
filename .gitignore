@@ -8,6 +8,13 @@ __pycache__/
 *.tgz
 credentials/*
 ssh_keys/*
+.claude/
+CLAUDE.md
+datapipeline/
+docs/
+repomix-output.xml
+plans/
+.gitignore
 
 # Distribution / packaging
 .Python
